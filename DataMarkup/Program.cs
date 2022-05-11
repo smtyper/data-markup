@@ -1,6 +1,7 @@
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+using DataMarkup;
 
-app.MapGet("/", () => "Hello World!");
+var host = Host.CreateDefaultBuilder()
+    .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<Startup>())
+    .Build();
 
-app.Run();
+await host.RunAsync();

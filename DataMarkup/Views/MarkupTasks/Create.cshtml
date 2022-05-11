@@ -1,0 +1,58 @@
+﻿@using DataMarkup.ViewModels
+@model DataMarkup.ViewModels.MarkupTaskViewModel
+
+<div class="container-fluid float-left mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" asp-controller="MarkupTasks" asp-action="Create">
+                <div asp-validation-summary="ModelOnly"></div>
+                <div class="form-group">
+                    <label asp-for="Name"></label><br>
+                    <input class="form-control w-50" asp-for="Name" value="@Model.Instruction"/>
+                    <span asp-validation-for="Name"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="MaxSolutions"></label><br>
+                    <input class="form-control w-50" asp-for="MaxSolutions"/>
+                    <span asp-validation-for="MaxSolutions"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Payment"></label><br>
+                    <input class="form-control w-50" asp-for="Payment"/>
+                    <span asp-validation-for="Payment"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Instruction"></label><br>
+                    <textarea class="form-control w-75" rows="14" asp-for="Instruction"></textarea>
+                    <span asp-validation-for="Instruction"></span>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <form method="post" asp-controller="MarkupTasks" asp-action="Create" asp>
+                <div asp-validation-summary="ModelOnly"></div>
+                <div class="form-group">
+                    <label asp-for="@Model.CurrentQuestion.StaticContent"></label><br>
+                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.StaticContent"/>
+                </div>
+                <div class="form-group">
+                    <label asp-for="@Model.CurrentQuestion.DynamicContentConstraint"></label><br>
+                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.DynamicContentConstraint"/>
+                </div>
+                <div class="form-group">
+                    <label asp-for="@Model.CurrentQuestion.AswerDescription"></label><br>
+                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AswerDescription"/>
+                </div>
+                <div class="form-group">
+                    <label asp-for="@Model.CurrentQuestion.AnswerConstraint"></label><br>
+                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AnswerConstraint"/>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="@Model.CurrentQuestion.ContainsImage"/>
+                    <label class="form-check-label" asp-for="@Model.CurrentQuestion.ContainsImage"></label>
+                </div>
+                <button class="btn btn-primary">Add to task</button>
+            </form>
+        </div>
+    </div>
+</div>

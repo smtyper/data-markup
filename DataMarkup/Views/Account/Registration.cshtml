@@ -1,0 +1,36 @@
+﻿@model DataMarkup.ViewModels.RegistrationViewModel
+
+<div class="container float-left mt-3">
+    <h2>New user registration</h2>
+    <form method="post" asp-controller="Account" asp-action="Registration">
+        <div asp-validation-summary="ModelOnly"></div>
+        <div class="form-group">
+            <label asp-for="Email"></label><br/>
+            <input class="form-control w-50" asp-for="Email"/>
+            <span asp-validation-for="Email"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="UserName"></label><br/>
+            <input class="form-control w-50" asp-for="UserName"/>
+            <span asp-validation-for="UserName"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Password"></label><br/>
+            <input class="form-control w-50" asp-for="Password"/>
+            <span asp-validation-for="Password"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="PasswordConfirm"></label><br/>
+            <input class="form-control w-50" asp-for="PasswordConfirm"/>
+            <span asp-validation-for="PasswordConfirm"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="BirthDate"></label><br/>
+            <input class="form-control w-50" asp-for="BirthDate"/>
+            <span asp-validation-for="BirthDate"></span>
+        </div>
+        <div>
+            <input class="btn btn-outline-primary" type="submit" value="Registration"/>
+        </div>
+    </form>
+</div>

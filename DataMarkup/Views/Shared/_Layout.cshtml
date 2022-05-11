@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"] DataMarkup</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="~/css/site.css"/>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">DataMarkup</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse d-flex justify-content-start" id="navbarLeft">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a class="navbar-text text-light mr-3" asp-controller="MarkupTasks" asp-action="Board">Tasks Board</a>
+            }
+        </div>
+        <div class="collapse navbar-collapse d-flex justify-content-end" id="navbarRight">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <span class="navbar-text text-light mr-2">@User.Identity.Name</span>
+                <form method="post" asp-controller="Account" asp-action="Logout" class="form-inline">
+                    <input type="submit" class="btn btn-outline-light" value="Logout"/>
+                </form>
+            }
+            else
+            {
+                <a class="navbar-link text-light mr-2" asp-controller="Account" asp-action="Login">
+                    Login
+                </a>
+                <a class="navbar-link text-light" asp-controller="Account" asp-action="Registration">
+                    Registration
+                </a>
+            }
+        </div>
+    </nav>
+</header>
+<div class="container-fluid">
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@RenderSection("Scripts", required: false)
+</body>
+</html>

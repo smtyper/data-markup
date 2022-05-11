@@ -1,0 +1,15 @@
+﻿@model dynamic
+
+
+<div class="container mt-3 float-left">
+      <div class="row mb-3">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a asp-controller="MarkupTasks" asp-action="Create" class="btn btn-primary">Create</a>
+            }
+            else
+            {
+                <h4>Sign in to watch and create tasks</h4>
+            }
+      </div>
+</div>
