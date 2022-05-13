@@ -1,5 +1,4 @@
-﻿@using DataMarkup.ViewModels
-@model DataMarkup.ViewModels.MarkupTaskViewModel
+﻿@model DataMarkup.ViewModels.MarkupTaskViewModel
 
 <div class="container-fluid float-left mt-3">
     <div class="row">
@@ -13,19 +12,25 @@
                 </div>
                 <div class="form-group">
                     <label asp-for="MaxSolutions"></label><br>
-                    <input class="form-control w-50" asp-for="MaxSolutions"/>
+                    <input class="form-control w-50" asp-for="MaxSolutions" value="@Model.MaxSolutions"/>
                     <span asp-validation-for="MaxSolutions"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="Payment"></label><br>
-                    <input class="form-control w-50" asp-for="Payment"/>
+                    <input class="form-control w-50" asp-for="Payment" value="@Model.Payment"/>
                     <span asp-validation-for="Payment"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="Instruction"></label><br>
-                    <textarea class="form-control w-75" rows="14" asp-for="Instruction"></textarea>
+                    <textarea class="form-control w-75" rows="14" asp-for="Instruction">@Model.Instruction</textarea>
                     <span asp-validation-for="Instruction"></span>
                 </div>
+                <ul class="list-group">
+                    @foreach (var question in Model.Questions)
+                    {
+                        <li class="list-group-item">@question.StaticContent</li>
+                    }
+                </ul>
             </form>
         </div>
         <div class="col-md-6">
@@ -34,22 +39,27 @@
                 <div class="form-group">
                     <label asp-for="@Model.CurrentQuestion.StaticContent"></label><br>
                     <input class="form-control w-50" asp-for="@Model.CurrentQuestion.StaticContent"/>
+                    <span asp-validation-for="@Model.CurrentQuestion.StaticContent"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="@Model.CurrentQuestion.DynamicContentConstraint"></label><br>
                     <input class="form-control w-50" asp-for="@Model.CurrentQuestion.DynamicContentConstraint"/>
+                    <span asp-validation-for="@Model.CurrentQuestion.DynamicContentConstraint"></span>
                 </div>
                 <div class="form-group">
-                    <label asp-for="@Model.CurrentQuestion.AswerDescription"></label><br>
-                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AswerDescription"/>
+                    <label asp-for="@Model.CurrentQuestion.AnswerDescription"></label><br>
+                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AnswerDescription"/>
+                    <span asp-validation-for="@Model.CurrentQuestion.AnswerDescription"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="@Model.CurrentQuestion.AnswerConstraint"></label><br>
                     <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AnswerConstraint"/>
+                    <span asp-validation-for="@Model.CurrentQuestion.AnswerConstraint"></span>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" asp-for="@Model.CurrentQuestion.ContainsImage"/>
                     <label class="form-check-label" asp-for="@Model.CurrentQuestion.ContainsImage"></label>
+                    <span asp-validation-for="@Model.CurrentQuestion.ContainsImage"></span>
                 </div>
                 <button class="btn btn-primary">Add to task</button>
             </form>

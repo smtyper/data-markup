@@ -4,15 +4,19 @@ namespace DataMarkup.ViewModels;
 
 public class MarkupQuestionViewModel
 {
+    [Required]
     [Display(Name = "Static content")]
     public string StaticContent { get; set; }
 
+    [Required]
     [Display(Name = "Dynamic content regex")]
     public string DynamicContentConstraint { get; set; }
 
-    [Display(Name = "Aswer description")]
-    public string AswerDescription { get; set; }
+    [Required]
+    [Display(Name = "Answer description")]
+    public string AnswerDescription { get; set; }
 
+    [Required]
     [Display(Name = "Answer content regex")]
     public string AnswerConstraint { get; set; }
 
