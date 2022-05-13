@@ -22,7 +22,7 @@ public class MarkupTasksController : Controller
     });
 
     [HttpPost]
-    public IActionResult Create(MarkupTaskViewModel currentTask)
+    public IActionResult Create([FromBody]MarkupTaskViewModel currentTask)
     {
         var currentQuestion = currentTask.CurrentQuestion;
 
