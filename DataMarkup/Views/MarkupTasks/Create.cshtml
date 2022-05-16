@@ -3,61 +3,63 @@
 <div class="container-fluid float-left mt-3">
     <div class="row">
         <div class="col-md-6">
-            <form>
-                <div asp-validation-summary="ModelOnly"></div>
-                <div class="form-group">
-                    <label asp-for="Name"></label><br>
-                    <input class="form-control w-50" asp-for="Name" id="nameInput"/>
-                    <span asp-validation-for="Name"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="MaxSolutions"></label><br>
-                    <input class="form-control w-50" asp-for="MaxSolutions" id="maxSolutionsInput"/>
-                    <span asp-validation-for="MaxSolutions"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="Payment"></label><br>
-                    <input class="form-control w-50" asp-for="Payment" id="paymentInput"/>
-                    <span asp-validation-for="Payment"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="Instruction"></label><br>
-                    <textarea class="form-control w-75" rows="14" asp-for="Instruction" id="instructionInput"></textarea>
-                    <span asp-validation-for="Instruction"></span>
-                </div>
-                <button class="btn btn-primary" onclick="addTask()">Create task</button>
-            </form>
+            <div class="form-group">
+                <label asp-for="Name"></label><br>
+                <input asp-for="Name" class="form-control w-50" id="nameInput" value="@Model.Name"/>
+                <span asp-validation-for="Name"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MaxSolutions"></label><br>
+                <input asp-for="MaxSolutions" class="form-control w-50" id="maxSolutionsInput"
+                       value="@Model.MaxSolutions"/>
+                <span asp-validation-for="MaxSolutions"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Payment"></label><br>
+                <input asp-for="Payment" class="form-control w-50" id="paymentInput" value="@Model.Payment"/>
+                <span asp-validation-for="Payment"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Instruction"></label><br>
+                <textarea asp-for="Instruction" class="form-control w-75" rows="14" id="instructionInput">
+                    @Model.Instruction
+                </textarea>
+                <span asp-validation-for="Instruction"></span>
+            </div>
+            <button class="btn btn-primary" onclick="addTask()">Create task</button>
         </div>
         <div class="col-md-6">
-            <form>
-                <div asp-validation-summary="ModelOnly"></div>
-                <div class="form-group">
-                    <label asp-for="@Model.CurrentQuestion.StaticContent"></label><br>
-                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.StaticContent" id="staticContentInput"/>
-                    <span asp-validation-for="@Model.CurrentQuestion.StaticContent"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="@Model.CurrentQuestion.DynamicContentConstraint"></label><br>
-                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.DynamicContentConstraint" id="dynamicContentInput"/>
-                    <span asp-validation-for="@Model.CurrentQuestion.DynamicContentConstraint"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="@Model.CurrentQuestion.AnswerDescription"></label><br>
-                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AnswerDescription" id="answerDescriptionInput"/>
-                    <span asp-validation-for="@Model.CurrentQuestion.AnswerDescription"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="@Model.CurrentQuestion.AnswerConstraint"></label><br>
-                    <input class="form-control w-50" asp-for="@Model.CurrentQuestion.AnswerConstraint" id="answerConstraint"/>
-                    <span asp-validation-for="@Model.CurrentQuestion.AnswerConstraint"></span>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" asp-for="@Model.CurrentQuestion.ContainsImage" id="containsImageInput"/>
-                    <label class="form-check-label" asp-for="@Model.CurrentQuestion.ContainsImage"></label>
-                    <span asp-validation-for="@Model.CurrentQuestion.ContainsImage"></span>
-                </div>
-                <button class="btn btn-primary" onclick="addQuestion()">Add to task</button>
-            </form>
+            <div class="form-group">
+                <label asp-for="@Model.CurrentQuestion.StaticContent"></label><br>
+                <input asp-for="@Model.CurrentQuestion.StaticContent" class="form-control w-50"
+                       id="staticContentInput" value="@Model.CurrentQuestion.StaticContent"/>
+                <span asp-validation-for="@Model.CurrentQuestion.StaticContent"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="@Model.CurrentQuestion.DynamicContentConstraint"></label><br>
+                <input asp-for="@Model.CurrentQuestion.DynamicContentConstraint" class="form-control w-50"
+                       id="dynamicContentInput" value="@Model.CurrentQuestion.DynamicContentConstraint"/>
+                <span asp-validation-for="@Model.CurrentQuestion.DynamicContentConstraint"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="@Model.CurrentQuestion.AnswerDescription"></label><br>
+                <input asp-for="@Model.CurrentQuestion.AnswerDescription" class="form-control w-50"
+                       id="answerDescriptionInput" value="@Model.CurrentQuestion.AnswerDescription"/>
+                <span asp-validation-for="@Model.CurrentQuestion.AnswerDescription"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="@Model.CurrentQuestion.AnswerConstraint"></label><br>
+                <input asp-for="@Model.CurrentQuestion.AnswerConstraint" class="form-control w-50"
+                       id="answerConstraint" value="@Model.CurrentQuestion.AnswerConstraint"/>
+                <span asp-validation-for="@Model.CurrentQuestion.AnswerConstraint"></span>
+            </div>
+            <div class="form-check">
+                <input asp-for="@Model.CurrentQuestion.ContainsImage" class="form-check-input" id="containsImageInput"
+                        value="@Model.CurrentQuestion.ContainsImage"/>
+                <label  asp-for="@Model.CurrentQuestion.ContainsImage" class="form-check-label"></label>
+                <span asp-validation-for="@Model.CurrentQuestion.ContainsImage"></span>
+            </div>
+            <button class="btn btn-primary" onclick="addQuestion()">Add to task</button>
         </div>
     </div>
 </div>
@@ -85,7 +87,17 @@
             Questions: questions, 
         }
         
-        alert(JSON.stringify(task))
+        fetch("/MarkupTasks/Create", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(task)
+        })
+        .then(response => {
+            clearTaskInput();
+            clearQuestionInput();
+        })
     }
     
     function addQuestion() {
@@ -96,17 +108,23 @@
                 AnswerConstraint: answerConstraint.value, 
                 ContainsImage: containsImageInput.value, 
             };
-        alert(JSON.stringify(questionObject))
+        
         questions.push(questionObject);
-        alert(JSON.stringify(questions))
         clearQuestionInput();
     }
     
     function clearQuestionInput() {
-            staticContentInput.value = "";
-            dynamicContentInput.value = "";
-            answerDescriptionInput.value = "";
-            answerConstraint.value = "";
-            containsImageInput.value = false;
+        staticContentInput.value = "";
+        dynamicContentInput.value = "";
+        answerDescriptionInput.value = "";
+        answerConstraint.value = "";
+        containsImageInput.value = false;
+    }
+    
+    function clearTaskInput() {
+        nameInput.value = "";
+        maxSolutionsInput.value = "";
+        paymentInput.value = "";
+        instructionInput.value = "";
     }
 </script>

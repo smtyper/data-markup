@@ -1,15 +1,44 @@
-﻿@model dynamic
+﻿@model IReadOnlyCollection<MarkupTask>
 
 
-<div class="container mt-3 float-left">
-      <div class="row mb-3">
-            @if (User.Identity!.IsAuthenticated)
-            {
-                <a asp-controller="MarkupTasks" asp-action="Create" class="btn btn-primary">Create</a>
-            }
-            else
-            {
-                <h4>Sign in to watch and create tasks</h4>
-            }
-      </div>
+<div class="container-fluid mt-3">
+      @foreach (var row in Model
+            .Select(task => (
+                  Title: task.Name,
+                        Subtitle: $"payment: {task.Payment}, max solutions: {task.MaxSolutions}",
+                        CardText: $"{string.Concat(task.Instruction.Take(70))}{(task.Instruction.Length > 70 ? string.Empty : "..." )}",
+                        ButtonText: "To task",
+                        AspController: "MarkupTasks",
+                        AspAction: "GetById",
+                        AspRouteId: (Guid?)task.Id))
+            .Prepend((
+                  Title: "New task",
+                        Subtitle: string.Empty,
+                        CardText: "Instruction preview...",
+                        ButtonText: "Create",
+                        AspController: "MarkupTasks",
+                        AspAction: "Create",
+                        AspRouteId: null))
+            .Select((card, index) => (card, index))
+            .GroupBy(pair => pair.index / 4))
+      {
+            <div class="row mb-3">
+                  @foreach (var (card, _) in row)
+                  {
+                        <div class="col-md-3">
+                              <div class="card">
+                                    <div class="card-body">
+                                          <h5 class="card-title">@card.Title</h5>
+                                          <h6 class="card-subtitle">@card.Subtitle</h6>
+                                          <p class="card-text">@card.CardText</p>
+                                          <a asp-controller="@card.AspController" asp-action="@card.AspAction" asp-route-id="@card.AspRouteId"
+                                             class="btn btn-primary">@card.ButtonText</a>
+                                    </div>
+                              </div>
+                        </div>
+                  }
+            </div>
+      }
 </div>
+
+@* asp-route-id="@note.Id" *@

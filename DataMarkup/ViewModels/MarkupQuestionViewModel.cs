@@ -5,7 +5,7 @@ namespace DataMarkup.ViewModels;
 public class MarkupQuestionViewModel
 {
     [Required]
-    [Display(Name = "Static content")]
+    [Display(Name = "Static content (displayed in each instance of question)")]
     public string StaticContent { get; set; }
 
     [Required]
@@ -17,9 +17,9 @@ public class MarkupQuestionViewModel
     public string AnswerDescription { get; set; }
 
     [Required]
-    [Display(Name = "Answer content regex")]
+    [Display(Name = "Answer regex")]
     public string AnswerConstraint { get; set; }
 
-    [Display(Name = "Contains image")]
+    [Display(Name = "Contains image?")]
     public bool ContainsImage { get; set; }
 }

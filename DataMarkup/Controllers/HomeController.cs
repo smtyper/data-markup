@@ -19,4 +19,10 @@ public class HomeController : Controller
     [HttpGet]
     public IActionResult Index() => View();
 
+    [HttpGet]
+    public IActionResult NeedsAuthorization() => View();
+
+    [HttpGet]
+    public IActionResult AccessDenied() => View();
+
 }
