@@ -42,25 +42,6 @@ public class MarkupTasksController : Controller
         }) :
         RedirectToAction("NeedsAuthorization", "Home");
 
-    [HttpGet("/{id}")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        var task = await _dataMarkupContext.MarkupTasks
-            .Include(task => task.User)
-            .Include(task => task.MarkupQuestions)
-            .SingleOrDefaultAsync(task => task.Id == id);
-
-        if (task is null)
-            return NotFound();
-
-        var userId = Guid.Parse(_userManager.GetUserId(User));
-
-        if (task.User.Id != userId)
-            return RedirectToAction("AccessDenied", "Home");
-
-        return View(task);
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody]MarkupTaskViewModel taskViewModel)
     {
@@ -86,4 +67,40 @@ public class MarkupTasksController : Controller
 
         return RedirectToAction("Board", "MarkupTasks");
     }
+
+    // public IActionResult Edit(MarkupTaskViewModel taskViewModel)
+    // {
+    //     if (!User.Identity!.IsAuthenticated)
+    //         return RedirectToAction("NeedsAuthorization", "Home");
+    //
+    //
+    // }
+
+    [HttpGet("/{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var task = await _dataMarkupContext.MarkupTasks
+            .Include(task => task.User)
+            .Include(task => task.MarkupQuestions)
+            .SingleOrDefaultAsync(task => task.Id == id);
+
+        if (task is null)
+            return NotFound();
+
+        var userId = Guid.Parse(_userManager.GetUserId(User));
+
+        if (task.User.Id != userId)
+            return RedirectToAction("AccessDenied", "Home");
+
+        var taskViewModel = task.Adapt<MarkupTaskViewModel>() with
+        {
+            Questions = task.MarkupQuestions
+                .Select(question => question.Adapt<MarkupQuestionViewModel>())
+                .ToList()
+        };
+
+        return View(taskViewModel);
+    }
+
+
 }

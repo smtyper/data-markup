@@ -2,8 +2,10 @@
 
 namespace DataMarkup.ViewModels;
 
-public class MarkupTaskViewModel
+public record MarkupTaskViewModel
 {
+    public Guid Id { get; init; }
+
     [Required]
     [Display(Name = "Task name")]
     public string Name { get; set; }
