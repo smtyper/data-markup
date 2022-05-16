@@ -40,11 +40,14 @@ public class MarkupTasksController : Controller
             CurrentQuestion = new MarkupQuestionViewModel(),
             Questions = new List<MarkupQuestionViewModel>()
         }) :
-        RedirectToAction("NeedsAuthorization", "Home");
+        Unauthorized();
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody]MarkupTaskViewModel taskViewModel)
     {
+        if (!ModelState.IsValid)
+            return BadRequest();
+
         if (!User.Identity!.IsAuthenticated)
             return RedirectToAction("NeedsAuthorization", "Home");
 
@@ -56,32 +59,86 @@ public class MarkupTasksController : Controller
         {
             Id = Guid.NewGuid(),
             User = currentUser,
-            MarkupQuestions = taskViewModel.Questions
+            Questions = taskViewModel.Questions
                 .Select(questionViewModel => questionViewModel.Adapt<MarkupQuestion>())
                 .ToList()
         };
 
-        _dataMarkupContext.MarkupTasks.Add(markupTask);
+        _dataMarkupContext.Tasks.Add(markupTask);
 
         await _dataMarkupContext.SaveChangesAsync();
 
-        return RedirectToAction("Board", "MarkupTasks");
+        return Ok();
     }
 
-    // public IActionResult Edit(MarkupTaskViewModel taskViewModel)
-    // {
-    //     if (!User.Identity!.IsAuthenticated)
-    //         return RedirectToAction("NeedsAuthorization", "Home");
-    //
-    //
-    // }
+    [HttpPost]
+    public async Task<IActionResult> EditTask([FromBody]MarkupTaskViewModel taskViewModel)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest();
+
+        if (!User.Identity!.IsAuthenticated)
+            return RedirectToAction("NeedsAuthorization", "Home");
+
+        var userId = Guid.Parse(_userManager.GetUserId(User));
+        var user = await _dataMarkupContext.Users
+            .Include(user => user.MarkupTasks)
+            .SingleAsync(user => user.Id == userId);
+
+        var task = user.MarkupTasks.SingleOrDefault(task => task.Id == taskViewModel.Id);
+
+        if (task is null)
+            return Forbid();
+
+        task.Name = taskViewModel.Name;
+        task.MaxSolutions = taskViewModel.MaxSolutions;
+        task.Payment = taskViewModel.Payment;
+        task.Instruction = taskViewModel.Instruction;
+
+        await _dataMarkupContext.SaveChangesAsync();
+
+        return Ok();
+    }
+
+    public async Task<IActionResult> EditQuestion([FromBody]MarkupQuestionViewModel questionViewModel)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest();
+
+        if (!User.Identity!.IsAuthenticated)
+            return Unauthorized();
+
+        var userId = Guid.Parse(_userManager.GetUserId(User));
+
+        var question = await _dataMarkupContext.Tasks
+            .Include(task => task.Questions)
+            .Include(task => task.User)
+            .Where(task => task.User.Id == userId)
+            .SelectMany(task => task.Questions)
+            .SingleOrDefaultAsync(question => question.Id == questionViewModel.Id);
+
+        if (question is null)
+            return Forbid();
+
+
+        question.StaticContent = questionViewModel.StaticContent;
+        question.DynamicContentConstraint = questionViewModel.DynamicContentConstraint;
+        question.AnswerDescription = questionViewModel.AnswerDescription;
+
+        await _dataMarkupContext.SaveChangesAsync();
+
+        return Ok();
+    }
 
     [HttpGet("/{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetTaskById(Guid id)
     {
-        var task = await _dataMarkupContext.MarkupTasks
+        if (!User.Identity!.IsAuthenticated)
+            return Unauthorized();
+
+        var task = await _dataMarkupContext.Tasks
             .Include(task => task.User)
-            .Include(task => task.MarkupQuestions)
+            .Include(task => task.Questions)
             .SingleOrDefaultAsync(task => task.Id == id);
 
         if (task is null)
@@ -90,17 +147,15 @@ public class MarkupTasksController : Controller
         var userId = Guid.Parse(_userManager.GetUserId(User));
 
         if (task.User.Id != userId)
-            return RedirectToAction("AccessDenied", "Home");
+            return Forbid();
 
         var taskViewModel = task.Adapt<MarkupTaskViewModel>() with
         {
-            Questions = task.MarkupQuestions
+            Questions = task.Questions
                 .Select(question => question.Adapt<MarkupQuestionViewModel>())
                 .ToList()
         };
 
         return View(taskViewModel);
     }
-
-
 }

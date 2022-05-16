@@ -1,0 +1,166 @@
+﻿@model DataMarkup.ViewModels.MarkupTaskViewModel
+
+<div class="container-fluid float-left mt-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="form-group">
+                <label asp-for="Name"></label><br>
+                <input class="form-control w-50" id="nameInput" value="@Model.Name"/>
+                <span asp-validation-for="Name"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MaxSolutions"></label><br>
+                <input class="form-control w-50" id="maxSolutionsInput"
+                       value="@Model.MaxSolutions"/>
+                <span asp-validation-for="MaxSolutions"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Payment"></label><br>
+                <input class="form-control w-50" id="paymentInput"
+                       value="@Model.Payment"/>
+                <span asp-validation-for="Payment"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Instruction"></label><br>
+                <textarea class="form-control w-75" rows="14" id="instructionInput">
+                    @Model.Instruction
+                </textarea>
+                <span asp-validation-for="Instruction"></span>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-dark" onclick="updateTask(@($"\"{Model.Id}\""))">
+                    Save changes
+                </button>
+            </div>
+
+            @foreach (var row in Model.Questions
+                .Select((question, index) => (question, index))
+                .GroupBy(pair => pair.index / 4))
+            {
+                <div class="row">
+                    @foreach (var (question, index) in row)
+                    {
+                        var staticContentInputId = $"staticContentInput{index}";
+                        var dynamicContentInputId = $"dynamicContentInput{index}";
+                        var answerDescriptionId = $"answerDescription{index}";
+                        var answerRegexId = $"answerRegex{index}";
+                        
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="card-header font-weight-bold">@($"Question #{index + 1}")</div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <label for="@staticContentInputId">Static content:</label>
+                                            <textarea asp-for="@question.StaticContent" 
+                                                   class="form-control w-100"
+                                                   id="@staticContentInputId"
+                                                   value="@question.StaticContent"></textarea>
+                                            <span asp-validation-for="@question.StaticContent"></span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <label for="@dynamicContentInputId">Dynamic content regex:</label>
+                                            <textarea asp-for="@question.DynamicContentConstraint"
+                                                   class="form-control w-100"
+                                                   id="@dynamicContentInputId"
+                                                   value="@question.DynamicContentConstraint"></textarea>
+                                            <span asp-validation-for="@question.DynamicContentConstraint"></span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <label for="@answerDescriptionId">Answer description:</label>
+                                            <textarea asp-for="@question.AnswerDescription"
+                                                   class="form-control w-100"
+                                                   id="@answerDescriptionId"
+                                                   value="@question.AnswerDescription"></textarea>
+                                            <span asp-validation-for="@question.AnswerDescription"></span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <label for="@answerRegexId">Answer regex:</label>
+                                            <input asp-for="@question.AnswerConstraint"
+                                                   readonly
+                                                   class="form-control-plaintext w-100"
+                                                   id="@answerRegexId"
+                                                   value="@question.AnswerConstraint"/>
+                                            <span asp-validation-for="@question.AnswerConstraint"></span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="form-check">
+                                                <input disabled @(question.ContainsImage ? "checked" : string.Empty)
+                                                       class="form-check-input" type="checkbox"
+                                                       id="@($"containsImage{index}")">
+                                                <label class="form-check-label" for="@($"containsImage{index}")">
+                                                    containt image
+                                                </label>
+                                            </div>
+                                        </li>
+                                        <button type="button" class="btn btn-light"
+                                                onclick="copyId(@($"\"{question.Id}\""))">
+                                            Copy id
+                                        </button>
+                                        <button type="button" class="btn btn-light"
+                                                onclick="updateQuestion(@($"\"{question.Id}\""), @index)">
+                                            Save changes
+                                        </button>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    let nameInput = document.getElementById("nameInput");
+    let maxSolutionsInput = document.getElementById("maxSolutionsInput");
+    let paymentInput = document.getElementById("paymentInput");
+    let instructionInput = document.getElementById("instructionInput");
+
+
+    function copyId(id) {
+        navigator.clipboard.writeText(id);
+    }
+    
+    function updateTask(id) {
+        let updatedTask = {
+            Id: id,
+            Name: nameInput.value,
+            MaxSolutions: maxSolutionsInput.value,
+            Payment: paymentInput.value,
+            Instruction: instructionInput.value
+        }
+        
+        fetch("/MarkupTasks/EditTask", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(updatedTask)
+        });
+    }
+    
+    function updateQuestion(id, index) {
+        let staticContentInput = document.getElementById(`staticContentInput${index}`);
+        let dynamicContentInput = document.getElementById(`dynamicContentInput${index}`);
+        let answerDescriptionInput = document.getElementById(`answerDescription${index}`);
+        let answerRegexInput = document.getElementById(`answerRegex${index}`);
+        
+        let updatedQuestion = {
+            Id: id, 
+            StaticContent: staticContentInput.value,
+            DynamicContentConstraint: dynamicContentInput.value,
+            AnswerDescription: answerDescriptionInput.value,
+            AnswerConstraint: answerRegexInput.value
+        };
+        
+        fetch("/MarkupTasks/EditQuestion", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(updatedQuestion)
+        });
+    }
+</script>

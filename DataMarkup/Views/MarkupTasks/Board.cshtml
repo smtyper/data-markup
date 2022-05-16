@@ -9,7 +9,7 @@
                         CardText: task.Instruction.CutIfMoreThan(70),
                         ButtonText: "To task",
                         AspController: "MarkupTasks",
-                        AspAction: "GetById",
+                        AspAction: "GetTaskById",
                         AspRouteId: (Guid?)task.Id))
             .Prepend((
                   Title: "New task",
@@ -40,5 +40,3 @@
             </div>
       }
 </div>
-
-@* asp-route-id="@note.Id" *@

@@ -4,9 +4,9 @@ namespace DataMarkup.Models;
 
 public class User : IdentityUser<Guid>
 {
-    public DateTime BirthDate { get; init; }
+    public DateTime BirthDate { get; set; }
 
-    public List<MarkupTask> MarkupTasks { get; init; }
+    public List<MarkupTask> MarkupTasks { get; set; }
 
     public User()
     {

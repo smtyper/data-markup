@@ -21,7 +21,7 @@ public record MarkupTaskViewModel
     public decimal Payment { get; set; }
 
     [Required]
-    [Display(Name = "Task insruction")]
+    [Display(Name = "Task instruction")]
     public string Instruction { get; set; }
 
     public MarkupQuestionViewModel CurrentQuestion { get; set; }

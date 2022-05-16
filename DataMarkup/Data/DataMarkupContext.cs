@@ -6,9 +6,13 @@ namespace DataMarkup.Data;
 
 public class DataMarkupContext : IdentityDbContext<User, Role, Guid>
 {
-    public DbSet<MarkupTask> MarkupTasks { get; set; }
+    public DbSet<MarkupTask> Tasks { get; set; }
 
-    public DbSet<MarkupQuestion> MarkupQuestions { get; set; }
+    public DbSet<MarkupQuestion> Questions { get; set; }
+
+    public DbSet<MarkupTaskInstance> TaskInstances { get; set; }
+
+    public DbSet<MarkupQuestionInstance> QuestionInstances { get; set; }
 
     public DataMarkupContext(DbContextOptions<DataMarkupContext> options) : base(options)
     {
@@ -21,7 +25,17 @@ public class DataMarkupContext : IdentityDbContext<User, Role, Guid>
             .WithMany(user => user.MarkupTasks);
         builder.Entity<MarkupQuestion>()
             .HasOne(question => question.Task)
-            .WithMany(task => task.MarkupQuestions);
+            .WithMany(task => task.Questions);
+
+        builder.Entity<MarkupTaskInstance>()
+            .HasOne(taskInstance => taskInstance.Task)
+            .WithMany(task => task.Instances);
+        builder.Entity<MarkupQuestionInstance>()
+            .HasOne(questionInstance => questionInstance.TaskInstance)
+            .WithMany(taskInstance => taskInstance.QuestionInstances);
+        builder.Entity<MarkupQuestionInstance>()
+            .HasOne(questionInstance => questionInstance.Question)
+            .WithMany();
 
         base.OnModelCreating(builder);
     }

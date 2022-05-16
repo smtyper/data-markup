@@ -1,20 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace DataMarkup.Models;
+﻿namespace DataMarkup.Models;
 
 public record MarkupQuestion
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
-    public string StaticContent { get; init; }
+    public string StaticContent { get; set; }
 
-    public string DynamicContentConstraint { get; init; }
+    public string DynamicContentConstraint { get; set; }
 
-    public string AnswerDescription { get; init; }
+    public string AnswerDescription { get; set; }
 
-    public string AnswerConstraint { get; init; }
+    public string AnswerConstraint { get; set; }
 
-    public bool ContainsImage { get; init; }
+    public bool ContainsImage { get; set; }
 
-    public MarkupTask Task { get; init; }
+    public MarkupTask Task { get; set; }
 }

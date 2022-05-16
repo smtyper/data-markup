@@ -26,7 +26,7 @@
                 </textarea>
                 <span asp-validation-for="Instruction"></span>
             </div>
-            <button class="btn btn-primary" onclick="addTask()">Create task</button>
+            <button class="btn btn-secondary" onclick="addTask()">Create task</button>
         </div>
         <div class="col-md-6">
             <div class="form-group">
@@ -56,7 +56,7 @@
             <div class="form-check">
                 <input asp-for="@Model.CurrentQuestion.ContainsImage" class="form-check-input" id="containsImageInput"
                         value="@Model.CurrentQuestion.ContainsImage"/>
-                <label  asp-for="@Model.CurrentQuestion.ContainsImage" class="form-check-label"></label>
+                <label asp-for="@Model.CurrentQuestion.ContainsImage" class="form-check-label"></label>
                 <span asp-validation-for="@Model.CurrentQuestion.ContainsImage"></span>
             </div>
             <button class="btn btn-secondary" onclick="addQuestion()">Add to task</button>
@@ -106,7 +106,7 @@
                 DynamicContentConstraint: dynamicContentInput.value,
                 AnswerDescription: answerDescriptionInput.value,
                 AnswerConstraint: answerConstraint.value, 
-                ContainsImage: containsImageInput.value, 
+                ContainsImage: containsImageInput.checked, 
             };
         
         questions.push(questionObject);

@@ -2,17 +2,19 @@
 
 public record MarkupTask
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
-    public string Name { get; init; }
+    public string Name { get; set; }
 
-    public int MaxSolutions { get; init; }
+    public int MaxSolutions { get; set; }
 
-    public decimal Payment { get; init; }
+    public decimal Payment { get; set; }
 
-    public string Instruction { get; init; }
+    public string Instruction { get; set; }
 
-    public List<MarkupQuestion> MarkupQuestions { get; init; }
+    public List<MarkupQuestion> Questions { get; set; }
 
-    public User User { get; init; }
+    public List<MarkupTaskInstance> Instances { get; set; }
+
+    public User User { get; set; }
 }
