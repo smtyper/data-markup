@@ -131,7 +131,7 @@ public class MarkupTasksController : Controller
     }
 
     [HttpGet("/{id:guid}")]
-    public async Task<IActionResult> GetTaskById(Guid id)
+    public async Task<IActionResult> GetTask(Guid id)
     {
         if (!User.Identity!.IsAuthenticated)
             return Unauthorized();
