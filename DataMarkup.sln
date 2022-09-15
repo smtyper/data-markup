@@ -1,8 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataMarkup", "DataMarkup\DataMarkup.csproj", "{A010440E-4EFB-495B-8269-2320334DC43E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataMarkup.Api", "DataMarkup.Api\DataMarkup.Api.csproj", "{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataMarkup.Api", "DataMarkup.Api\DataMarkup.Api.csproj", "{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,13 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A010440E-4EFB-495B-8269-2320334DC43E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A010440E-4EFB-495B-8269-2320334DC43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A010440E-4EFB-495B-8269-2320334DC43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A010440E-4EFB-495B-8269-2320334DC43E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4F0B581-B0A3-4CBC-B6D3-DA24002A2ED3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB135952-48AA-4F2E-B3E4-035B68F38765}
 	EndGlobalSection
 EndGlobal

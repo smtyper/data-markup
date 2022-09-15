@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using DataMarkup.Api.Models.Dto.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -8,14 +8,14 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace DataMarkup.Api.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
-public class AuthenticationController : ControllerBase
+[Route("api/[controller]")]
+public class AccountController : ControllerBase
 {
-    private readonly AuthenticationControllerSettings _settings;
+    private readonly AccountControllerSettings _settings;
     private readonly UserManager<IdentityUser> _userManager;
 
-    public AuthenticationController(IOptions<AuthenticationControllerSettings> options,
+    public AccountController(IOptions<AccountControllerSettings> options,
         UserManager<IdentityUser> userManager)
     {
         _userManager = userManager;
@@ -73,31 +73,9 @@ public class AuthenticationController : ControllerBase
 
         return token;
     }
-
-    public class RegisterModel
-    {
-        [Required(ErrorMessage = "Username is required.")]
-        public string? Username { get; init; }
-
-        [EmailAddress]
-        [Required(ErrorMessage = "Email is required.")]
-        public string? Email { get; init; }
-
-        [Required(ErrorMessage = "Password is required.")]
-        public string? Password { get; init; }
-    }
-
-    public record LoginModel
-    {
-        [Required(ErrorMessage = "Username is required.")]
-        public string? Username { get; init; }
-
-        [Required(ErrorMessage = "Password is required.")]
-        public string? Password { get; init; }
-    }
 }
 
-public record AuthenticationControllerSettings
+public record AccountControllerSettings
 {
     public string ValidAudience { get; init; } = null!;
 

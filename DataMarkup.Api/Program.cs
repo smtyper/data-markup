@@ -12,7 +12,7 @@ var generalConnectionString = builder.Configuration.GetConnectionString("DataMar
 
 
 builder.Services
-    .AddOptions<AuthenticationControllerSettings>()
+    .AddOptions<AccountControllerSettings>()
     .Bind(builder.Configuration.GetSection("Authentication"));
 
 builder.Services.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(generalConnectionString));
@@ -44,10 +44,10 @@ builder.Services
     });
 
 builder.Services
-    .AddOptions<AuthenticationControllerSettings>()
+    .AddOptions<AccountControllerSettings>()
     .Bind(builder.Configuration.GetSection("Authentication"));
 
-builder.Services.AddControllers() ;
+builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
