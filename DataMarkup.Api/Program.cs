@@ -1,6 +1,7 @@
 using System.Text;
 using DataMarkup.Api.Controllers;
 using DataMarkup.Api.DbContexts;
+using DataMarkup.Api.Models.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,10 @@ builder.Services
     .AddOptions<AccountControllerSettings>()
     .Bind(builder.Configuration.GetSection("Authentication"));
 
-builder.Services.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(generalConnectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(generalConnectionString));
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<IdentityDbContext>()
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
 builder.Services

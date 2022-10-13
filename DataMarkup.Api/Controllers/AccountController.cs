@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using DataMarkup.Api.Models.Account;
 using DataMarkup.Api.Models.Dto.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,10 @@ namespace DataMarkup.Api.Controllers;
 public class AccountController : ControllerBase
 {
     private readonly AccountControllerSettings _settings;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<User> _userManager;
 
     public AccountController(IOptions<AccountControllerSettings> options,
-        UserManager<IdentityUser> userManager)
+        UserManager<User> userManager)
     {
         _userManager = userManager;
         _settings = options.Value;
@@ -32,7 +33,7 @@ public class AccountController : ControllerBase
         if (userExists is not null)
             return Conflict(new { Message = "User already exists." });
 
-        var user = new IdentityUser
+        var user = new User
         {
             Email = model.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
