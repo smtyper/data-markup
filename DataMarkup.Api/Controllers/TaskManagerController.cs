@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using DataMarkup.Api.Models.Dto.TaskManager;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +16,11 @@ public class TaskManagerController : ControllerBase
     public TaskManagerController(UserManager<IdentityUser> userManager) => _userManager = userManager;
 
     [HttpPost]
-    [Route("add-markup-task")]
-    public async Task<IActionResult> AddMarkupTask()
+    [Route("add-task-type")]
+    public async Task<IActionResult> AddMarkupTask([FromBody] TaskType taskType)
+    {
+        var userId = _userManager.GetUserId(HttpContext.User);
+
+        return Ok();
+    }
 }

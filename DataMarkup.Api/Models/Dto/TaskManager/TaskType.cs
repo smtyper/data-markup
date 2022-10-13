@@ -2,7 +2,7 @@
 
 namespace DataMarkup.Api.Models.Dto.TaskManager;
 
-public record MarkupTask
+public record TaskType
 {
     [Required]
     public string Name { get; init; } = null!;
@@ -17,10 +17,10 @@ public record MarkupTask
     [Required]
     public string Instruction { get; init; } = null!;
 
-    public TYPE Type { get; init; }
+    public IReadOnlyCollection<QuestionType> Questions { get; init; } = null!;
 }
 
-public record MarkupQuestion
+public record QuestionType
 {
     [Required]
     public string StaticContent { get; init; } = null!;

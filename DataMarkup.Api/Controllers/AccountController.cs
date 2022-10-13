@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using DataMarkup.Api.Models.Dto.Account;
 using Microsoft.AspNetCore.Identity;
@@ -55,19 +56,24 @@ public class AccountController : ControllerBase
             return Unauthorized();
 
 
-        var token = GetJwtSecurityToken();
+        var token = GetJwtSecurityToken(user);
 
         return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token), Expiration = token.ValidTo });
     }
 
-    private JwtSecurityToken GetJwtSecurityToken()
+    private JwtSecurityToken GetJwtSecurityToken(IdentityUser identityUser)
     {
         var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
 
         var token = new JwtSecurityToken(
             issuer: _settings.ValidIssuer,
+            claims: new []
+            {
+                new Claim("sub", identityUser.Id),
+                new Claim(ClaimsIdentity.DefaultNameClaimType, identityUser.Id)
+            },
             audience: _settings.ValidAudience,
-            expires: DateTime.Now.AddHours(2),
+            expires: DateTime.UtcNow.AddHours(2),
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
 
