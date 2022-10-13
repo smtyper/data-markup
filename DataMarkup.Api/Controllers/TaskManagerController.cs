@@ -33,6 +33,11 @@ public class TaskManagerController : ControllerBase
             .Where(user => user.Id == userId)
             .SingleAsync();
 
+        var types = await _applicationDbContext.TaskTypes
+            .Include(type => type.QuestionTypes)
+            .Where(type => type.UserId == userId)
+            .ToArrayAsync();
+
         if (currentUser.TaskTypes.Any(taskType => taskType.Name == taskTypeDto.Name))
             return Conflict(new { Message = "The task type with the same name already exists." });
 
@@ -50,11 +55,6 @@ public class TaskManagerController : ControllerBase
 
         await _applicationDbContext.TaskTypes.AddAsync(taskType);
         await _applicationDbContext.SaveChangesAsync();
-
-        var types = await _applicationDbContext.Users
-            .Where(user => user.Id == userId)
-            .Include(user => user.TaskTypes)
-            .ToArrayAsync();
 
         return Ok();
     }

@@ -16,6 +16,8 @@ public record TaskType
 
     public User User { get; init; } = null!;
 
+    public string UserId { get; init; } = null!;
+
     public IReadOnlyCollection<QuestionType> QuestionTypes { get; init; } = null!;
 }
 

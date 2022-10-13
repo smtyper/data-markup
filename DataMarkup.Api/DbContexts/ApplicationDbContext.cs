@@ -17,14 +17,15 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        builder.Entity<User>()
-            .HasMany<TaskType>()
-            .WithOne(taskType => taskType.User);
+        base.OnModelCreating(builder);
+
+        builder.Entity<TaskType>()
+            .HasOne<User>()
+            .WithMany(user => user.TaskTypes)
+            .HasForeignKey(type => type.UserId);
 
         builder.Entity<TaskType>()
             .HasMany<QuestionType>()
             .WithOne(questionType => questionType.TaskType);
-
-        base.OnModelCreating(builder);
     }
 }
