@@ -1,5 +1,5 @@
-﻿using DataMarkup.Api.Models.Account;
-using DataMarkup.Api.Models.Markup;
+﻿using DataMarkup.Api.Models.Database.Account;
+using DataMarkup.Api.Models.Database.Markup;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +34,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
         builder.Entity<TaskType>()
             .HasMany(type => type.TaskInstances)
             .WithOne(instance => instance.TaskType)
-            .OnDelete(DeleteBehavior.NoAction);;
+            .OnDelete(DeleteBehavior.NoAction);
         builder.Entity<QuestionType>()
             .HasMany(type => type.QuestionInstances)
             .WithOne(instance => instance.QuestionType)

@@ -1,14 +1,13 @@
 ﻿using System.Text.RegularExpressions;
 using DataMarkup.Api.DbContexts;
-using DataMarkup.Api.Models.Account;
-using DataMarkup.Api.Models.Markup;
+using DataMarkup.Api.Models.Database.Account;
+using DataMarkup.Api.Models.Database.Markup;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MoreLinq.Extensions;
-using Newtonsoft.Json;
 
 namespace DataMarkup.Api.Controllers;
 
@@ -37,7 +36,7 @@ public class TaskManagerController : ControllerBase
                 .Where(type => type.UserId == currentUser.Id)
                 .Select(type => type)
                 .ToArrayAsync())
-            .Select(type => type with { User = null })
+            .Select(type => type.Adapt<Models.Views.TaskType>())
             .ToArray();
 
         return Ok(taskTypes);
@@ -80,65 +79,68 @@ public class TaskManagerController : ControllerBase
 
     [HttpPost]
     [Route("add-task-instance")]
-    public async Task<IActionResult> AddTaskInstance([FromBody] Models.Dto.TaskManager.TaskInstance taskInstanceDto)
+    public async Task<IActionResult> AddTaskInstance(
+        [FromBody] Models.Dto.TaskManager.TaskInstancesParameters parameters)
     {
         var currentUser = await GetCurrentUserAsync();
-
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.QuestionTypes)
             .Where(type => type.UserId == currentUser.Id)
-            .SingleOrDefaultAsync(type => type.Id == taskInstanceDto.TaskTypeId);
+            .SingleOrDefaultAsync(type => type.Id == parameters.TaskTypeId);
 
         if (taskType is null)
             return BadRequest(new
             {
-                Message = $"Cannot find task type by the following id: {taskInstanceDto.TaskTypeId}."
+                Message = $"Cannot find task type by the following id: {parameters.TaskTypeId}."
             });
 
-        var questionsMap = taskInstanceDto.QuestionInstances
-            .LeftJoin(taskType.QuestionTypes,
-                instance => instance.QuestionTypeId,
-                type => type.Id,
-                instance => (instance, null)!,
-                (instance, type) => (instance, type))
-            .ToArray();
-
-        if (questionsMap.Any(pair => pair.type is null))
+        foreach (var taskInstanceDto in parameters.TaskInstances)
         {
-            var unknownQuestionTypeIds = string.Join(", ", questionsMap
-                .Where(pair => pair.type is null)
-                .Select(pair => pair.instance.QuestionTypeId));
+            var questionsMap = taskInstanceDto.QuestionInstances
+                .LeftJoin(taskType.QuestionTypes,
+                    instance => instance.QuestionTypeId,
+                    type => type.Id,
+                    instance => (instance, null)!,
+                    (instance, type) => (instance, type))
+                .ToArray();
 
-            return BadRequest(new { Message = $"Unknown question types: {unknownQuestionTypeIds}." });
+            if (questionsMap.Any(pair => pair.type is null))
+            {
+                var unknownQuestionTypeIds = string.Join(", ", questionsMap
+                    .Where(pair => pair.type is null)
+                    .Select(pair => pair.instance.QuestionTypeId));
+
+                return BadRequest(new { Message = $"Unknown question types: {unknownQuestionTypeIds}." });
+            }
+
+            if (questionsMap.Any(pair => !Regex.IsMatch(pair.instance.Content, pair.type.DynamicContentConstraint)))
+            {
+                var mismatchedQuestionInstances = string.Join(", ", questionsMap
+                    .Where(pair => !Regex.IsMatch(pair.instance.Content, pair.type.DynamicContentConstraint))
+                    .Select(pair => $"({pair.instance.Content}) : ({pair.type.DynamicContentConstraint})"));
+
+                return BadRequest(
+                    new { Message = $"Question instances doesn't match the pattern: {mismatchedQuestionInstances}" });
+            }
+
+            var taskInstanceId = Guid.NewGuid();
+            var taskInstance = new TaskInstance
+            {
+                Id = taskInstanceId,
+                TaskTypeId = taskType.Id,
+                QuestionInstances = questionsMap
+                    .Select(pair => pair.instance.Adapt<QuestionInstance>() with
+                    {
+                        Id = Guid.NewGuid(),
+                        TaskInstanceId = taskInstanceId,
+                        QuestionTypeId = pair.type.Id
+                    })
+                    .ToArray()
+            };
+
+            await _applicationDbContext.TaskInstances.AddAsync(taskInstance);
         }
 
-        if (questionsMap.Any(pair => !Regex.IsMatch(pair.instance.Content, pair.type.DynamicContentConstraint)))
-        {
-            var mismatchedQuestionInstances = string.Join(", ", questionsMap
-                .Where(pair => !Regex.IsMatch(pair.instance.Content, pair.type.DynamicContentConstraint))
-                .Select(pair => $"({pair.instance.Content}) : ({pair.type.DynamicContentConstraint})"));
-
-            return BadRequest(
-                new { Message = $"Question instances doesn't match the pattern: {mismatchedQuestionInstances}" });
-        }
-
-        var taskInstanceId = Guid.NewGuid();
-        var taskInstance = new TaskInstance
-        {
-            Id = taskInstanceId,
-            TaskTypeId = taskType.Id,
-            QuestionInstances = questionsMap
-                .Select(pair => new QuestionInstance
-                {
-                    Id = Guid.NewGuid(),
-                    Content = pair.instance.Content,
-                    TaskInstanceId = taskInstanceId,
-                    QuestionTypeId = pair.type.Id
-                })
-                .ToArray()
-        };
-
-        await _applicationDbContext.TaskInstances.AddAsync(taskInstance);
         await _applicationDbContext.SaveChangesAsync();
 
         return Ok();

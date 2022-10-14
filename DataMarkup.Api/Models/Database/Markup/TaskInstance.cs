@@ -1,4 +1,4 @@
-﻿namespace DataMarkup.Api.Models.Markup;
+﻿namespace DataMarkup.Api.Models.Database.Markup;
 
 public record TaskInstance
 {
@@ -14,6 +14,8 @@ public record TaskInstance
 public record QuestionInstance
 {
     public Guid Id { get; init; }
+
+    public string? ImageSource { get; init; }
 
     public string Content { get; init; } = null!;
 

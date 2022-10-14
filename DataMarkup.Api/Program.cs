@@ -1,7 +1,7 @@
 using System.Text;
 using DataMarkup.Api.Controllers;
 using DataMarkup.Api.DbContexts;
-using DataMarkup.Api.Models.Account;
+using DataMarkup.Api.Models.Database.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

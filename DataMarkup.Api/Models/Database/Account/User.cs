@@ -1,7 +1,7 @@
-﻿using DataMarkup.Api.Models.Markup;
+﻿using DataMarkup.Api.Models.Database.Markup;
 using Microsoft.AspNetCore.Identity;
 
-namespace DataMarkup.Api.Models.Account;
+namespace DataMarkup.Api.Models.Database.Account;
 
 public class User : IdentityUser
 {

@@ -1,7 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using DataMarkup.Api.Models.Account;
+using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Api.Models.Dto.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

@@ -1,6 +1,6 @@
-﻿using DataMarkup.Api.Models.Account;
+﻿using DataMarkup.Api.Models.Database.Account;
 
-namespace DataMarkup.Api.Models.Markup;
+namespace DataMarkup.Api.Models.Database.Markup;
 
 public record TaskType
 {
