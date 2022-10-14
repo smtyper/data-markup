@@ -14,11 +14,13 @@ public record TaskType
 
     public string Instruction { get; init; } = null!;
 
-    public User User { get; init; } = null!;
+    public User? User { get; init; }
 
     public string UserId { get; init; } = null!;
 
-    public IReadOnlyCollection<QuestionType> QuestionTypes { get; init; } = null!;
+    public IReadOnlyCollection<QuestionType>? QuestionTypes { get; init; }
+
+    public IReadOnlyCollection<TaskInstance>? TaskInstances { get; init; }
 }
 
 public record QuestionType
@@ -33,7 +35,9 @@ public record QuestionType
 
     public string AnswerConstraint { get; init; } = null!;
 
-    public bool ContainsImage { get; init; }
+    public Guid TaskTypeId { get; init; }
 
-    public TaskType TaskType { get; set; } = null!;
+    public TaskType? TaskType { get; init; }
+
+    public IReadOnlyCollection<QuestionInstance>? QuestionInstances { get; init; }
 }

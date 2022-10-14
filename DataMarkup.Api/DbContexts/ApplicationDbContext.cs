@@ -11,6 +11,10 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
     public DbSet<QuestionType> QuestionTypes { get; init; } = null!;
 
+    public DbSet<TaskInstance> TaskInstances { get; init; } = null!;
+
+    public DbSet<QuestionInstance> QuestionInstances { get; init; } = null!;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
@@ -20,12 +24,25 @@ public class ApplicationDbContext : IdentityDbContext<User>
         base.OnModelCreating(builder);
 
         builder.Entity<TaskType>()
-            .HasOne<User>()
+            .HasOne(type => type.User)
             .WithMany(user => user.TaskTypes)
-            .HasForeignKey(type => type.UserId);
-
+            .OnDelete(DeleteBehavior.NoAction);;
         builder.Entity<TaskType>()
-            .HasMany<QuestionType>()
-            .WithOne(questionType => questionType.TaskType);
+            .HasMany(type => type.QuestionTypes)
+            .WithOne(questionType => questionType.TaskType)
+            .OnDelete(DeleteBehavior.NoAction);
+        builder.Entity<TaskType>()
+            .HasMany(type => type.TaskInstances)
+            .WithOne(instance => instance.TaskType)
+            .OnDelete(DeleteBehavior.NoAction);;
+        builder.Entity<QuestionType>()
+            .HasMany(type => type.QuestionInstances)
+            .WithOne(instance => instance.QuestionType)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Entity<TaskInstance>()
+            .HasMany(taskInstance => taskInstance.QuestionInstances)
+            .WithOne(questionInstance => questionInstance.TaskInstance)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
