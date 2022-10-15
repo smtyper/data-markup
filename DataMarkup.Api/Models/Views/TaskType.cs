@@ -12,6 +12,8 @@ public record TaskType
 
     public string Instruction { get; init; } = null!;
 
+    public AccessType AccessType { get; init; }
+
     public IReadOnlyCollection<QuestionType> QuestionTypes { get; init; } = null!;
 }
 

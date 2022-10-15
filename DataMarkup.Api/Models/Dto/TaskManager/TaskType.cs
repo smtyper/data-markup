@@ -18,6 +18,9 @@ public record TaskType
     public string Instruction { get; init; } = null!;
 
     [Required]
+    public AccessType? AccessType { get; init; }
+
+    [Required]
     public IReadOnlyCollection<QuestionType> Questions { get; init; } = null!;
 }
 

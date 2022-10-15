@@ -5,5 +5,7 @@ namespace DataMarkup.Api.Models.Database.Account;
 
 public class User : IdentityUser
 {
-    public IReadOnlyCollection<TaskType> TaskTypes { get; init; } = null!;
+    public IReadOnlyCollection<TaskType>? TaskTypes { get; init; }
+
+    public IReadOnlyCollection<Solution>? Solutions { get; init; }
 }

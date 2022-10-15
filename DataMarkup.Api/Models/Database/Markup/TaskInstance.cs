@@ -9,6 +9,8 @@ public record TaskInstance
     public TaskType? TaskType { get; init; }
 
     public IReadOnlyCollection<QuestionInstance>? QuestionInstances { get; init; }
+
+    public IReadOnlyCollection<Solution>? Solutions { get; init; }
 }
 
 public record QuestionInstance
@@ -26,4 +28,6 @@ public record QuestionInstance
     public Guid QuestionTypeId { get; init; }
 
     public QuestionType? QuestionType { get; init; }
+
+    public IReadOnlyCollection<Answer>? Answers { get; init; }
 }
