@@ -11,6 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 var generalConnectionString = builder.Configuration.GetConnectionString("DataMarkup");
 
+builder.Services.AddCors(policy =>
+{
+    policy.AddPolicy(nameof(DataMarkup), corsPolicyBuilder =>
+    {
+        corsPolicyBuilder.AllowAnyOrigin();
+        corsPolicyBuilder.AllowAnyHeader();
+    });
+});
 
 builder.Services
     .AddOptions<AccountControllerSettings>()
@@ -54,6 +62,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseCors(nameof(DataMarkup));
 
 if (app.Environment.IsDevelopment())
 {
