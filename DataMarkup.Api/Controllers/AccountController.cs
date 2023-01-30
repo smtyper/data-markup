@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Api.Models.Dto.Account;
+using DataMarkup.Api.Models.Views.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -31,7 +32,7 @@ public class AccountController : ControllerBase
         var userExists = await _userManager.FindByNameAsync(model.Username);
 
         if (userExists is not null)
-            return Conflict(new { Message = "User already exists." });
+            return Conflict(new RegisterResult { Succesful = false, Message = "User already exists." });
 
         var user = new User
         {
@@ -42,9 +43,13 @@ public class AccountController : ControllerBase
         var creationResult = await _userManager.CreateAsync(user, model.Password);
 
         if (creationResult.Succeeded)
-            return Ok();
+            return Ok(new RegisterResult { Succesful = true, Message = default });
 
-        return UnprocessableEntity(new { Message = "Registration failed. Check requirements and try again." });
+        return UnprocessableEntity(new RegisterResult
+        {
+            Succesful = false,
+            Message = "Registration failed. Check requirements and try again."
+        });
     }
 
     [HttpPost]
@@ -53,13 +58,23 @@ public class AccountController : ControllerBase
     {
         var user = await _userManager.FindByNameAsync(model.Username);
 
-        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password))
-            return Unauthorized();
+        if (user is null)
+            return Unauthorized(new LoginResult { Succesful = false, Message = "User is not found." });
 
+        var checkPasswordAsync = await _userManager.CheckPasswordAsync(user, model.Password);
+
+        if (!checkPasswordAsync)
+            return Unauthorized(new LoginResult { Succesful = false, Message = "Wrong password." });
 
         var token = GetJwtSecurityToken(user);
 
-        return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token), Expiration = token.ValidTo });
+        return Ok(new LoginResult
+        {
+            Succesful = true,
+            Message = default,
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Expiration = token.ValidTo
+        });
     }
 
     private JwtSecurityToken GetJwtSecurityToken(IdentityUser identityUser)
