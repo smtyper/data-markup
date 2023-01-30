@@ -1,4 +1,3 @@
-using System.Net;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using DataMarkup.Frontend;
@@ -9,10 +8,6 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddHttpClient<DataMarkupClient>()
-    // .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-    // {
-    //     AutomaticDecompression =
-    // })
     .ConfigureHttpClient(client =>
     {
         client.BaseAddress = new Uri("https://localhost:5001/api/");

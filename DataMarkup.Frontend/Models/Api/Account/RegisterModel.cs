@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DataMarkup.Frontend.Models.Dto.Account;
+namespace DataMarkup.Frontend.Models.Api.Account;
 
 public record RegisterModel
 {

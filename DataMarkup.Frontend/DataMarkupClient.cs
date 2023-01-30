@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using DataMarkup.Frontend.Models.Dto.Account;
+using DataMarkup.Frontend.Models.Api.Account;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace DataMarkup.Frontend;
