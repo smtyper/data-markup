@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
+using Task = System.Threading.Tasks.Task;
 
 namespace DataMarkup.Frontend;
 
@@ -30,8 +31,8 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", savedToken);
 
-        var state = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(savedToken),
-            "jwt")));
+        var claims = ParseClaimsFromJwt(savedToken);
+        var state = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt")));
 
         return state;
     }
@@ -41,6 +42,7 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, email) },
             "apiauth"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
+
         NotifyAuthenticationStateChanged(authState);
     }
 
@@ -48,6 +50,7 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
     {
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
         var authState = Task.FromResult(new AuthenticationState(anonymousUser));
+
         NotifyAuthenticationStateChanged(authState);
     }
 
@@ -84,13 +87,17 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         return claims;
     }
 
-    private byte[] ParseBase64WithoutPadding(string base64)
+    private static byte[] ParseBase64WithoutPadding(string base64)
     {
-        switch (base64.Length % 4)
+        var withouPadding = (base64.Length % 4) switch
         {
-            case 2: base64 += "=="; break;
-            case 3: base64 += "="; break;
-        }
-        return Convert.FromBase64String(base64);
+            2 => base64 + "==",
+            3 => base64 + "+",
+            _ => throw new ArgumentOutOfRangeException(nameof(base64))
+        };
+
+        var bytes = Convert.FromBase64String(withouPadding);
+
+        return bytes;
     }
 }

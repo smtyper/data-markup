@@ -1,53 +1,53 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using Blazored.LocalStorage;
-using DataMarkup.Frontend.Models.Api.Account;
-using Microsoft.AspNetCore.Components.Authorization;
+using DataMarkup.Entities.Parameters.Account;
+using DataMarkup.Entities.Views.Account;
 
 namespace DataMarkup.Frontend;
 
 public class AuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly AuthenticationStateProvider _authenticationStateProvider;
+    private readonly ApiAuthenticationStateProvider _apiAuthenticationStateProvider;
     private readonly ILocalStorageService _localStorage;
 
     public AuthService(HttpClient httpClient,
-        AuthenticationStateProvider authenticationStateProvider,
+        ApiAuthenticationStateProvider apiAuthenticationStateProvider,
         ILocalStorageService localStorage)
     {
         _httpClient = httpClient;
-        _authenticationStateProvider = authenticationStateProvider;
+        _apiAuthenticationStateProvider = apiAuthenticationStateProvider;
         _localStorage = localStorage;
     }
 
-    public async Task<HttpStatusCode> Register(RegisterModel registerModel)
+    public async Task<RegisterResult?> Register(RegisterParameters registerModel)
     {
         const string uri = "Account/Register";
 
         using var response = await _httpClient.PostAsJsonAsync(uri, registerModel);
+        var registerResult = await response.Content.ReadAsAsync<RegisterResult>();
 
-        return response.StatusCode;
+        return registerResult;
     }
 
-    public async Task<LoginResult> Login(LoginModel loginModel)
+    public async Task<LoginResult?> Login(LoginParameters loginModel)
     {
         const string uri = "Account/Login";
 
         using var response = await _httpClient.PostAsJsonAsync(uri, loginModel);
+        var contentString = await response.Content.ReadAsStringAsync();
+
+        var loginResult = string.IsNullOrEmpty(contentString) ?
+            null :
+            JsonSerializer.Deserialize<LoginResult>(contentString);
 
         if (!response.IsSuccessStatusCode)
-        {
             return loginResult;
-        }
 
-        var loginResult = JsonSerializer.Deserialize<LoginResponseModel>(await response.Content.ReadAsStringAsync(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        await _localStorage.SetItemAsync("authToken", loginResult.Token);
-        ((ApiAuthenticationStateProvider)_authenticationStateProvider).MarkUserAsAuthenticated(loginModel.Email);
+        await _localStorage.SetItemAsync("authToken", loginResult!.Token);
+        _apiAuthenticationStateProvider.MarkUserAsAuthenticated(loginModel.Username!);
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", loginResult.Token);
 
         return loginResult;
@@ -56,7 +56,7 @@ public class AuthService
     public async Task Logout()
     {
         await _localStorage.RemoveItemAsync("authToken");
-        ((ApiAuthenticationStateProvider)_authenticationStateProvider).MarkUserAsLoggedOut();
+        _apiAuthenticationStateProvider.MarkUserAsLoggedOut();
         _httpClient.DefaultRequestHeaders.Authorization = null;
     }
 }
