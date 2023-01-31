@@ -1,5 +1,6 @@
 ﻿using DataMarkup.Api.Models.Database.Access;
 using DataMarkup.Api.Models.Database.Account;
+using DataMarkup.Entities;
 
 namespace DataMarkup.Api.Models.Database.Markup;
 
@@ -25,7 +26,7 @@ public record TaskType
 
     public IReadOnlyCollection<TaskInstance>? TaskInstances { get; init; }
 
-    public IReadOnlyCollection<Permission>? Persmissions { get; init; }
+    public IReadOnlyCollection<Permission>? Permissions { get; init; }
 }
 
 public record QuestionType

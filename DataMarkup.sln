@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataMarkup.Api", "DataMarku
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataMarkup.Frontend", "DataMarkup.Frontend\DataMarkup.Frontend.csproj", "{C9E07144-59FE-461D-9696-B1CEE09CA764}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataMarkup.Entities", "DataMarkup.Entities\DataMarkup.Entities.csproj", "{6456EAE6-5F52-4E02-B2B2-097259B23E47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{C9E07144-59FE-461D-9696-B1CEE09CA764}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9E07144-59FE-461D-9696-B1CEE09CA764}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9E07144-59FE-461D-9696-B1CEE09CA764}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6456EAE6-5F52-4E02-B2B2-097259B23E47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6456EAE6-5F52-4E02-B2B2-097259B23E47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6456EAE6-5F52-4E02-B2B2-097259B23E47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6456EAE6-5F52-4E02-B2B2-097259B23E47}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

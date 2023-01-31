@@ -1,4 +1,4 @@
-﻿namespace DataMarkup.Api.Models;
+﻿namespace DataMarkup.Entities;
 
 public enum AccessType
 {

@@ -1,8 +1,10 @@
 ﻿using System.Text.RegularExpressions;
 using DataMarkup.Api.DbContexts;
-using DataMarkup.Api.Models;
 using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Api.Models.Database.Markup;
+using DataMarkup.Entities;
+using DataMarkup.Entities.Parameters.Board;
+using DataMarkup.Entities.Views.Board;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -33,14 +35,19 @@ public class BoardController : ControllerBase
         var currentUser = await GetCurrentUserAsync();
 
         var availableTaskTypes = await _applicationDbContext.TaskTypes
-            .Include(type => type.Persmissions)
+            .Include(type => type.Permissions)
             .Include(type => type.QuestionTypes)
             .Where(type => type.AccessType == AccessType.Free ||
-                           type.Persmissions!.Any(permission => permission.UserId == Guid.Parse(currentUser.Id)))
-            .Select(type => type.Adapt<Models.Views.TaskType>())
+                           type.Permissions!.Any(permission => permission.UserId == Guid.Parse(currentUser.Id)))
+            .Select(type => type.Adapt<Entities.Views.TaskType>())
             .ToArrayAsync();
 
-        return Ok(availableTaskTypes);
+        return Ok(new GetAvailableTaskTypesResult
+        {
+            Successful = true,
+            TaskTypes = availableTaskTypes,
+            Count = availableTaskTypes.Length
+        });
     }
 
     [HttpGet]
@@ -50,15 +57,23 @@ public class BoardController : ControllerBase
         var currentUser = await GetCurrentUserAsync();
         var currentUserId = Guid.Parse(currentUser.Id);
         var taskType = await _applicationDbContext.TaskTypes
-            .Include(type => type.Persmissions)
+            .Include(type => type.Permissions)
             .SingleOrDefaultAsync(type => type.Id == taskTypeId);
 
         if (taskType is null)
-            return BadRequest($"There is no task by folliwing id: {taskTypeId}");
+            return BadRequest(new GetTaskResult
+            {
+                Successful = true,
+                Message = $"There is no task by folliwing id: {taskTypeId}"
+            });
 
         if (taskType.AccessType is AccessType.WhiteList &&
-            taskType.Persmissions!.All(persmission => persmission.UserId == currentUserId))
-            return BadRequest("You have no permission to take this task.");
+            taskType.Permissions!.All(persmission => persmission.UserId == currentUserId))
+            return BadRequest(new GetTaskResult
+            {
+                Successful = false,
+                Message = "You have no permission to take this task."
+            });
 
         var taskInstances = _applicationDbContext.TaskInstances
             .Where(instance => instance.TaskTypeId == taskTypeId)
@@ -71,16 +86,20 @@ public class BoardController : ControllerBase
             .ToArray();
 
         if (!taskInstances.Any())
-            return Ok("There is no tasks by this id to you.");
+            return Ok(new GetTaskResult
+            {
+                Successful = true,
+                Message = "There is no tasks by this id to you."
+            });
 
         var taskInstance = taskInstances.First();
 
-        var resultTask = new Models.Views.Task
+        var resultTask = new Entities.Views.Task
         {
             InstanceId = taskInstance.Id,
             Instruction = taskType.Instruction,
             Questions = taskInstance.QuestionInstances!
-                .Select(questionInstance => new Models.Views.Question
+                .Select(questionInstance => new Entities.Views.Question
                 {
                     InstanceId = questionInstance.Id,
                     Description = questionInstance.QuestionType!.StaticContent,
@@ -91,12 +110,16 @@ public class BoardController : ControllerBase
                 .ToArray()
         };
 
-        return Ok(resultTask);
+        return Ok(new GetTaskResult
+        {
+            Successful = true,
+            Task = resultTask
+        });
     }
 
     [HttpPost]
     [Route("add-solution")]
-    public async Task<IActionResult> AddSolution([FromBody] Models.Dto.Board.Solution solutionParameters)
+    public async Task<IActionResult> AddSolution([FromBody] SolutionParameters solutionParameters)
     {
         var taskInstanceId = solutionParameters.TaskInstanceId!.Value;
 
@@ -111,17 +134,33 @@ public class BoardController : ControllerBase
             .SingleOrDefaultAsync(instance => instance.Id == taskInstanceId);
 
         if (taskInstance is null)
-            return BadRequest($"There is no task instance by the following id: {taskInstanceId}");
+            return BadRequest(new AddSolutionResult
+            {
+                Successful = false,
+                Message = $"There is no task instance by the following id: {taskInstanceId}"
+            });
 
         if (taskInstance.TaskType!.AccessType is AccessType.WhiteList &&
-            taskInstance.TaskType.Persmissions!.All(persmission => persmission.UserId != currentUserId))
-            return BadRequest("You have no permission to solve this task.");
+            taskInstance.TaskType.Permissions!.All(persmission => persmission.UserId != currentUserId))
+            return BadRequest(new AddSolutionResult
+            {
+                Successful = false,
+                Message = "You have no permission to solve this task."
+            });
 
         if (taskInstance.Solutions!.Any(solution => solution.UserId == currentUserId))
-            return BadRequest("You have already solved this task.");
+            return Conflict(new AddSolutionResult
+            {
+                Successful = false,
+                Message = "You have already solved this task."
+            });
 
         if (taskInstance.Solutions!.Count >= taskInstance.TaskType.SolutionsCount)
-            return BadRequest("The maximum number of solutions has been reached.");
+            return Conflict(new AddSolutionResult
+            {
+                Successful = false,
+                Message = "The maximum number of solutions has been reached."
+            });
 
         var questionsMap = taskInstance.QuestionInstances!
             .Join(taskInstance.TaskType.QuestionTypes!,
@@ -136,7 +175,11 @@ public class BoardController : ControllerBase
             .ToArray();
 
         if (questionsMap.Any(item => item.answer is null))
-            return BadRequest("The one of the questions is missed.");
+            return Conflict(new AddSolutionResult
+            {
+                Successful = false,
+                Message = "The one of the questions is missed."
+            });
 
         if (questionsMap.Any(item => !new Regex(item.pair.type.AnswerConstraint).IsFullMatch(item.answer.Content)))
         {
@@ -144,7 +187,11 @@ public class BoardController : ControllerBase
                 .Where(item => !new Regex(item.pair.type.AnswerConstraint).IsFullMatch(item.answer.Content))
                 .Select(item => $"{item.answer.Content} : {item.pair.type.AnswerConstraint}"));
 
-            return BadRequest($"The following answers doesn't match the patterns: {mismatchedAnswers}.");
+            return BadRequest(new AddSolutionResult
+            {
+                Successful = false,
+                Message = $"The following answers doesn't match the patterns: {mismatchedAnswers}."
+            });
         }
 
         var solutionId = Guid.NewGuid();
@@ -167,7 +214,7 @@ public class BoardController : ControllerBase
         await _applicationDbContext.Solutions.AddAsync(solution);
         await _applicationDbContext.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new AddSolutionResult { Successful = true });
     }
 
     private async ValueTask<User> GetCurrentUserAsync()

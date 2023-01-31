@@ -1,16 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DataMarkup.Api.Models.Dto.Account;
+namespace DataMarkup.Entities.Parameters.Account;
 
-public record RegisterModel
+public record RegisterParameters
 {
     [Required(ErrorMessage = "Username is required.")]
-    public string? Username { get; init; }
+    public string? Username { get; set; }
 
     [EmailAddress]
     [Required(ErrorMessage = "Email is required.")]
-    public string? Email { get; init; }
+    public string? Email { get; set; }
 
     [Required(ErrorMessage = "Password is required.")]
-    public string? Password { get; init; }
+    public string? Password { get; set; }
 }

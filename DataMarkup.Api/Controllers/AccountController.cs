@@ -2,8 +2,8 @@
 using System.Security.Claims;
 using System.Text;
 using DataMarkup.Api.Models.Database.Account;
-using DataMarkup.Api.Models.Dto.Account;
-using DataMarkup.Api.Models.Views.Account;
+using DataMarkup.Entities.Parameters.Account;
+using DataMarkup.Entities.Views.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -27,20 +27,20 @@ public class AccountController : ControllerBase
 
     [HttpPost]
     [Route("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterModel model)
+    public async Task<IActionResult> Register([FromBody] RegisterParameters parameters)
     {
-        var userExists = await _userManager.FindByNameAsync(model.Username);
+        var userExists = await _userManager.FindByNameAsync(parameters.Username);
 
         if (userExists is not null)
             return Conflict(new RegisterResult { Succesful = false, Message = "User already exists." });
 
         var user = new User
         {
-            Email = model.Email,
+            Email = parameters.Email,
             SecurityStamp = Guid.NewGuid().ToString(),
-            UserName = model.Username
+            UserName = parameters.Username
         };
-        var creationResult = await _userManager.CreateAsync(user, model.Password);
+        var creationResult = await _userManager.CreateAsync(user, parameters.Password);
 
         if (creationResult.Succeeded)
             return Ok(new RegisterResult { Succesful = true, Message = default });
@@ -54,23 +54,23 @@ public class AccountController : ControllerBase
 
     [HttpPost]
     [Route("login")]
-    public async Task<IActionResult> Login([FromBody] LoginModel model)
+    public async Task<IActionResult> Login([FromBody] LoginParameters parameters)
     {
-        var user = await _userManager.FindByNameAsync(model.Username);
+        var user = await _userManager.FindByNameAsync(parameters.Username);
 
         if (user is null)
-            return Unauthorized(new LoginResult { Succesful = false, Message = "User is not found." });
+            return Unauthorized(new LoginResult { Successful = false, Message = "User is not found." });
 
-        var checkPasswordAsync = await _userManager.CheckPasswordAsync(user, model.Password);
+        var checkPasswordAsync = await _userManager.CheckPasswordAsync(user, parameters.Password);
 
         if (!checkPasswordAsync)
-            return Unauthorized(new LoginResult { Succesful = false, Message = "Wrong password." });
+            return Unauthorized(new LoginResult { Successful = false, Message = "Wrong password." });
 
         var token = GetJwtSecurityToken(user);
 
         return Ok(new LoginResult
         {
-            Succesful = true,
+            Successful = true,
             Message = default,
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             Expiration = token.ValidTo

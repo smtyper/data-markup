@@ -41,7 +41,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
             .WithOne(instance => instance.TaskType)
             .OnDelete(DeleteBehavior.NoAction);
         builder.Entity<TaskType>()
-            .HasMany(type => type.Persmissions)
+            .HasMany(type => type.Permissions)
             .WithOne(permission => permission.TaskType)
             .OnDelete(DeleteBehavior.NoAction);
         builder.Entity<QuestionType>()

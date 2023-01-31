@@ -3,6 +3,8 @@ using DataMarkup.Api.DbContexts;
 using DataMarkup.Api.Models.Database.Access;
 using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Api.Models.Database.Markup;
+using DataMarkup.Entities.Parameters.TaskManager;
+using DataMarkup.Entities.Views.TaskManager;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -27,58 +29,88 @@ public class TaskManagerController : ControllerBase
 
     [HttpPost]
     [Route("remove-permission")]
-    public async Task<IActionResult> RemovePermission([FromBody] Models.Dto.TaskManager.Permission permissionParemeters)
+    public async Task<IActionResult> RemovePermission([FromBody] PermissionParameters permissionParameters)
     {
         var currentUser = await GetCurrentUserAsync();
         var taskType = await _applicationDbContext.TaskTypes
-            .Include(type => type.Persmissions)
-            .SingleOrDefaultAsync(type => type.UserId == currentUser.Id);
+            .Include(type => type.Permissions)
+            .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
+                                          type.UserId == currentUser.Id);
 
         if (taskType is null)
-            return Unauthorized();
+            return BadRequest(new RemovePermissionResult
+            {
+                Successful = false,
+                Message = $"Unable to find task type by the following id '{permissionParameters.TaskTypeId}'"
+            });
 
-        var user = await _userManager.FindByNameAsync(permissionParemeters.UserName);
+        var user = await _userManager.FindByNameAsync(permissionParameters.UserName);
 
         if (user is null)
-            return BadRequest($"Cannot find user by name '{permissionParemeters.UserName}'.");
+            return BadRequest(new RemovePermissionResult
+            {
+                Successful = false,
+                Message = $"Unable to find user by name '{permissionParameters.UserName}'."
+            });
 
-        var permissionToRemove = await _applicationDbContext.Permissions.SingleAsync(permission =>
-            permission.UserId == Guid.Parse(user.Id) && permission.TaskTypeId == permissionParemeters.TaskTypeId);
+        var permissionToRemove = await _applicationDbContext.Permissions
+            .SingleOrDefaultAsync(permission => permission.UserId == Guid.Parse(user.Id) &&
+                                       permission.TaskTypeId == permissionParameters.TaskTypeId);
+
+        if (permissionToRemove is null)
+            return BadRequest(new RemovePermissionResult
+            {
+                Successful = false,
+                Message = "Unable to remove non-existent permission."
+            });
 
         _applicationDbContext.Permissions.Remove(permissionToRemove);
         await _applicationDbContext.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new RemovePermissionResult { Successful = true });
     }
 
     [HttpPost]
     [Route("add-permission")]
-    public async Task<IActionResult> AddPermission([FromBody] Models.Dto.TaskManager.Permission permissionParemeters)
+    public async Task<IActionResult> AddPermission([FromBody] PermissionParameters permissionParameters)
     {
         var currentUser = await GetCurrentUserAsync();
         var taskType = await _applicationDbContext.TaskTypes
-            .Include(type => type.Persmissions)
-            .SingleOrDefaultAsync(type => type.UserId == currentUser.Id);
+            .Include(type => type.Permissions)
+            .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
+                                          type.UserId == currentUser.Id);
 
         if (taskType is null)
-            return Unauthorized();
+            return BadRequest(new RemovePermissionResult
+            {
+                Successful = false,
+                Message = $"Unable to find task type by the following id '{permissionParameters.TaskTypeId}'"
+            });
 
-        var user = await _userManager.FindByNameAsync(permissionParemeters.UserName);
+        var user = await _userManager.FindByNameAsync(permissionParameters.UserName);
 
         if (user is null)
-            return BadRequest($"Cannot find user by name '{permissionParemeters.UserName}'.");
+            return BadRequest(new RemovePermissionResult
+            {
+                Successful = false,
+                Message = $"Unable to find user by name '{permissionParameters.UserName}'."
+            });
 
         var userId = Guid.Parse(user.Id);
 
-        if (taskType.Persmissions!.Any(permission => permission.UserId == userId))
-            return Ok("User already has permission.");
+        if (taskType.Permissions!.Any(permission => permission.UserId == userId))
+            return BadRequest(new AddPermissionResult
+            {
+                Successful = false,
+                Message = "User already has permission."
+            });
 
         var persmission = new Permission { TaskTypeId = taskType.Id, UserId = userId };
 
         await _applicationDbContext.Permissions.AddAsync(persmission);
         await _applicationDbContext.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new AddPermissionResult { Successful = true });
     }
 
     [HttpGet]
@@ -89,41 +121,46 @@ public class TaskManagerController : ControllerBase
 
         var taskTypes = (await _applicationDbContext.TaskTypes
                 .Include(type => type.QuestionTypes)
-                .Include(type => type.Persmissions)
+                .Include(type => type.Permissions)
                 .Where(type => type.UserId == currentUser.Id)
                 .Select(type => type)
                 .ToArrayAsync())
-            .Select(type => type.Adapt<Models.Views.TaskType>())
+            .Select(type => type.Adapt<Entities.Views.TaskType>())
             .ToArray();
 
-        return Ok(taskTypes);
+        return Ok(new GetTaskTypesResult { Successful = true, TaskTypes = taskTypes, Count = taskTypes.Length });
     }
 
     [HttpPost]
     [Route("add-task-type")]
-    public async Task<IActionResult> AddTaskType([FromBody] Models.Dto.TaskManager.TaskType taskTypeDto)
+    public async Task<IActionResult> AddTaskType([FromBody] TaskTypeParameters taskTypeParameters)
     {
         var currentUser = await GetCurrentUserAsync();
         var taskTypes = await _applicationDbContext.TaskTypes.Include(type => type.QuestionTypes).ToArrayAsync();
 
-        if (taskTypes.Any(taskType => taskType.Name == taskTypeDto.Name))
-            return Conflict(new { Message = "The task type with the same name already exists." });
+        if (taskTypes.Any(taskType => taskType.Name == taskTypeParameters.Name))
+            return Conflict(new AddTaskTypeResult
+            {
+                Successful = false,
+                Message = $"The task type with the same name '{taskTypeParameters.Name}' already exists."
+            });
 
-        foreach (var constraint in taskTypeDto.Questions
+        foreach (var constraint in taskTypeParameters.Questions
                      .SelectMany(questionDto =>
                          new[] { questionDto.DynamicContentConstraint, questionDto.AnswerConstraint }))
             if (!constraint.IsValidRegex())
-                return BadRequest(new
+                return BadRequest(new AddTaskTypeResult
                 {
-                    Message = $"Cannot use {constraint} as a pattern."
+                    Successful = false,
+                    Message = $"Cannot use '{constraint}' as a pattern."
                 });
 
         var taskTypeId = Guid.NewGuid();
-        var taskType = taskTypeDto.Adapt<TaskType>() with
+        var taskType = taskTypeParameters.Adapt<TaskType>() with
         {
             Id = Guid.NewGuid(),
             UserId = currentUser.Id,
-            QuestionTypes = taskTypeDto.Questions
+            QuestionTypes = taskTypeParameters.Questions
                 .Select(dto => dto.Adapt<QuestionType>() with
                 {
                     Id = Guid.NewGuid(),
@@ -135,31 +172,35 @@ public class TaskManagerController : ControllerBase
         await _applicationDbContext.TaskTypes.AddAsync(taskType);
         await _applicationDbContext.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new AddTaskTypeResult { Successful = true });
     }
 
     [HttpPost]
     [Route("add-task-instances")]
-    public async Task<IActionResult> AddTaskInstances(
-        [FromBody] Models.Dto.TaskManager.TaskInstancesParameters parameters)
+    public async Task<IActionResult> AddTaskInstances([FromBody] TaskInstancesParameters taskInstancesParameters)
     {
         var currentUser = await GetCurrentUserAsync();
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.QuestionTypes)
             .Where(type => type.UserId == currentUser.Id)
-            .SingleOrDefaultAsync(type => type.Id == parameters.TaskTypeId);
+            .SingleOrDefaultAsync(type => type.Id == taskInstancesParameters.TaskTypeId);
 
         if (taskType is null)
-            return BadRequest(new
+            return BadRequest(new AddTaskInstancesResult
             {
-                Message = $"Cannot find task type by the following id: {parameters.TaskTypeId}."
+                Successful = false,
+                Message = $"Cannot find task type by the following id: {taskInstancesParameters.TaskTypeId}."
             });
 
-        foreach (var (questionTypeId, questionInstanceDtos) in parameters.QuestionDictionary)
+        foreach (var (questionTypeId, questionInstanceDtos) in taskInstancesParameters.QuestionDictionary)
         {
 
             if (taskType.QuestionTypes!.All(type => type.Id != questionTypeId))
-                return BadRequest(new { Message = $"Unknown question type: {questionTypeId}." });
+                return BadRequest(new AddTaskInstancesResult
+                {
+                    Successful = false,
+                    Message = $"Unknown question type: {questionTypeId}."
+                });
 
             var questionType = taskType.QuestionTypes!.Single(type => type.Id == questionTypeId);
             var contraintRegex = new Regex(questionType.DynamicContentConstraint);
@@ -171,14 +212,16 @@ public class TaskManagerController : ControllerBase
                 .Where(instanceDto => !contraintRegex.IsFullMatch(instanceDto.Content))
                 .Select(instanceDto => instanceDto.Content));
 
-            return BadRequest(new
+            return BadRequest(new AddTaskInstancesResult
             {
+                Successful = false,
                 Message =
                     $"The following instances doesn't match the pattern: ({questionType.DynamicContentConstraint}) {mismatchedContent}"
             });
         }
 
-        var maxQuestionInstancesCount = parameters.QuestionDictionary.Values.Max(instanceDtos => instanceDtos.Count);
+        var maxQuestionInstancesCount = taskInstancesParameters.QuestionDictionary.Values
+            .Max(instanceDtos => instanceDtos.Count);
         var taskTypes = Enumerable
             .Range(0, maxQuestionInstancesCount)
             .Select(index =>
@@ -188,7 +231,7 @@ public class TaskManagerController : ControllerBase
                 {
                     Id = taskInstanceId,
                     TaskTypeId = taskType.Id,
-                    QuestionInstances = parameters.QuestionDictionary
+                    QuestionInstances = taskInstancesParameters.QuestionDictionary
                         .Where(pair => index < pair.Value.Count)
                         .Select(pair => pair.Value[index].Adapt<QuestionInstance>() with
                         {
@@ -204,7 +247,7 @@ public class TaskManagerController : ControllerBase
         await _applicationDbContext.TaskInstances.AddRangeAsync(taskTypes);
         await _applicationDbContext.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new AddTaskInstancesResult { Successful = true });
     }
 
     private async ValueTask<User> GetCurrentUserAsync()

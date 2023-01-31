@@ -1,4 +1,4 @@
-﻿namespace DataMarkup.Api.Models.Views.Account;
+﻿namespace DataMarkup.Entities.Views.Account;
 
 public record RegisterResult
 {

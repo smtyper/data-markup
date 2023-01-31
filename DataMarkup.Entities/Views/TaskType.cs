@@ -1,4 +1,4 @@
-﻿namespace DataMarkup.Api.Models.Views;
+﻿namespace DataMarkup.Entities.Views;
 
 public record TaskType
 {
