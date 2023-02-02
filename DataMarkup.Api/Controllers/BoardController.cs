@@ -32,7 +32,7 @@ public class BoardController : ControllerBase
     [Route("get-available-task-types")]
     public async Task<IActionResult> GetAvailableTaskTypes()
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
 
         var availableTaskTypes = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
@@ -54,7 +54,7 @@ public class BoardController : ControllerBase
     [Route("get-task")]
     public async Task<IActionResult> GetTask([FromQuery]Guid taskTypeId)
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var currentUserId = Guid.Parse(currentUser.Id);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
@@ -123,7 +123,7 @@ public class BoardController : ControllerBase
     {
         var taskInstanceId = solutionParameters.TaskInstanceId!.Value;
 
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var currentUserId = Guid.Parse(currentUser.Id);
 
         var taskInstance = await _applicationDbContext.TaskInstances
@@ -215,15 +215,5 @@ public class BoardController : ControllerBase
         await _applicationDbContext.SaveChangesAsync();
 
         return Ok(new AddSolutionResult { Successful = true });
-    }
-
-    private async ValueTask<User> GetCurrentUserAsync()
-    {
-        var userId = _userManager.GetUserId(HttpContext.User);
-        var user = await _applicationDbContext.Users
-            .Where(user => user.Id == userId)
-            .SingleAsync();
-
-        return user;
     }
 }

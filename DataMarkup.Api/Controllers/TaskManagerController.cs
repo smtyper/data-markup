@@ -31,7 +31,7 @@ public class TaskManagerController : ControllerBase
     [Route("remove-permission")]
     public async Task<IActionResult> RemovePermission([FromBody] PermissionParameters permissionParameters)
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
             .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
@@ -74,7 +74,7 @@ public class TaskManagerController : ControllerBase
     [Route("add-permission")]
     public async Task<IActionResult> AddPermission([FromBody] PermissionParameters permissionParameters)
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
             .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
@@ -117,7 +117,7 @@ public class TaskManagerController : ControllerBase
     [Route("get-task-types")]
     public async Task<IActionResult> GetTaskTypes()
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
 
         var taskTypes = (await _applicationDbContext.TaskTypes
                 .Include(type => type.QuestionTypes)
@@ -135,7 +135,7 @@ public class TaskManagerController : ControllerBase
     [Route("add-task-type")]
     public async Task<IActionResult> AddTaskType([FromBody] TaskTypeParameters taskTypeParameters)
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskTypes = await _applicationDbContext.TaskTypes.Include(type => type.QuestionTypes).ToArrayAsync();
 
         if (taskTypes.Any(taskType => taskType.Name == taskTypeParameters.Name))
@@ -179,7 +179,7 @@ public class TaskManagerController : ControllerBase
     [Route("add-task-instances")]
     public async Task<IActionResult> AddTaskInstances([FromBody] TaskInstancesParameters taskInstancesParameters)
     {
-        var currentUser = await GetCurrentUserAsync();
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.QuestionTypes)
             .Where(type => type.UserId == currentUser.Id)
@@ -248,15 +248,5 @@ public class TaskManagerController : ControllerBase
         await _applicationDbContext.SaveChangesAsync();
 
         return Ok(new AddTaskInstancesResult { Successful = true });
-    }
-
-    private async ValueTask<User> GetCurrentUserAsync()
-    {
-        var userId = _userManager.GetUserId(HttpContext.User);
-        var user = await _applicationDbContext.Users
-            .Where(user => user.Id == userId)
-            .SingleAsync();
-
-        return user;
     }
 }
