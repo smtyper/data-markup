@@ -54,6 +54,7 @@ WebApplicationBuilder CreateWebApplicationBuilder()
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
 
                 ValidAudience = builder.Configuration["Authentication:ValidAudience"],
                 ValidIssuer = builder.Configuration["Authentication:ValidIssuer"],
