@@ -89,7 +89,7 @@ public class AccountController : ControllerBase
                 new Claim(ClaimsIdentity.DefaultNameClaimType, identityUser.Id)
             },
             audience: _settings.ValidAudience,
-            expires: DateTime.UtcNow.AddHours(2),
+            expires: DateTime.UtcNow.Add(_settings.TokenLifetime),
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
 
@@ -104,4 +104,6 @@ public record AccountControllerSettings
     public string ValidIssuer { get; init; } = null!;
 
     public string Secret { get; init; } = null!;
+
+    public TimeSpan TokenLifetime { get; init; }
 }
