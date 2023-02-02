@@ -87,8 +87,7 @@ public class AccountController : ControllerBase
             claims: new []
             {
                 new Claim(ClaimTypes.Name, identityUser.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimsIdentity.DefaultNameClaimType, identityUser.UserName)
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             },
             audience: _settings.ValidAudience,
             expires: DateTime.UtcNow.Add(_settings.TokenLifetime),
