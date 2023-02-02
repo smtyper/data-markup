@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Entities.Parameters.Account;
@@ -32,7 +33,7 @@ public class AccountController : ControllerBase
         var userExists = await _userManager.FindByNameAsync(parameters.Username);
 
         if (userExists is not null)
-            return Conflict(new RegisterResult { Succesful = false, Message = "User already exists." });
+            return Conflict(new RegisterResult { Succesful = false, Message = "User with the same name already exists." });
 
         var user = new User
         {
@@ -85,8 +86,9 @@ public class AccountController : ControllerBase
             issuer: _settings.ValidIssuer,
             claims: new []
             {
-                new Claim("sub", identityUser.Id),
-                new Claim(ClaimsIdentity.DefaultNameClaimType, identityUser.Id)
+                new Claim(ClaimTypes.Name, identityUser.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimsIdentity.DefaultNameClaimType, identityUser.UserName)
             },
             audience: _settings.ValidAudience,
             expires: DateTime.UtcNow.Add(_settings.TokenLifetime),
@@ -94,6 +96,18 @@ public class AccountController : ControllerBase
         );
 
         return token;
+    }
+
+    private static string GetRefreshToken()
+    {
+        using var randomNumberGenerator = RandomNumberGenerator.Create();
+
+        var bytes = new byte[64];
+        randomNumberGenerator.GetBytes(bytes);
+
+        var base64Number = Convert.ToBase64String(bytes);
+
+        return base64Number;
     }
 }
 
