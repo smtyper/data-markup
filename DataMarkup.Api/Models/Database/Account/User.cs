@@ -8,4 +8,8 @@ public class User : IdentityUser
     public IReadOnlyCollection<TaskType>? TaskTypes { get; init; }
 
     public IReadOnlyCollection<Solution>? Solutions { get; init; }
+
+    public Guid? RefreshTokenId { get; init; }
+
+    public RefreshToken? RefreshToken { get; init; }
 }

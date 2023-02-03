@@ -8,6 +8,8 @@ namespace DataMarkup.Api.DbContexts;
 
 public class ApplicationDbContext : IdentityDbContext<User>
 {
+    public DbSet<RefreshToken> RefreshTokens { get; init; } = null!;
+
     public DbSet<TaskType> TaskTypes { get; init; } = null!;
 
     public DbSet<QuestionType> QuestionTypes { get; init; } = null!;
@@ -28,10 +30,15 @@ public class ApplicationDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<RefreshToken>()
+            .HasOne(token => token.User)
+            .WithOne(user => user.RefreshToken)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Entity<TaskType>()
             .HasOne(type => type.User)
             .WithMany(user => user.TaskTypes)
-            .OnDelete(DeleteBehavior.NoAction);;
+            .OnDelete(DeleteBehavior.NoAction);
         builder.Entity<TaskType>()
             .HasMany(type => type.QuestionTypes)
             .WithOne(questionType => questionType.TaskType)
