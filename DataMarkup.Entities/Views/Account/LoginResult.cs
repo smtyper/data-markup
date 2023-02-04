@@ -6,5 +6,7 @@ public record LoginResult : RequestResult
 
     public string? RefreshToken { get; init; }
 
-    public DateTime? Expiration { get; init; }
+    public DateTime? TokenExpiration { get; init; }
+
+    public DateTime? RefreshTokenExpiration { get; init; }
 }

@@ -73,7 +73,7 @@ public class AccountController : ControllerBase
         if (!checkPasswordAsync)
             return Unauthorized(new LoginResult { Successful = false, Message = "Wrong password." });
 
-        var token = GetJwtSecurityToken(user);
+        var token = GetJwtSecurityToken(user, _settings.Secret, _settings.TokenLifetime);
         var refreshToken = await GetRefreshToken(user);
 
         return Ok(new LoginResult
@@ -82,7 +82,8 @@ public class AccountController : ControllerBase
             Message = default,
             Token = new JwtSecurityTokenHandler().WriteToken(token),
             RefreshToken = refreshToken.Token,
-            Expiration = token.ValidTo
+            TokenExpiration = token.ValidTo,
+            RefreshTokenExpiration = refreshToken.Expiration
         });
     }
 
@@ -90,52 +91,32 @@ public class AccountController : ControllerBase
     [Route("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenParameters parameters)
     {
-        var user = await ParseOutdatedToken(parameters.OutdatedToken!);
+        var user = await GetUserFromJwtTokenAsync(parameters.RefreshToken!, _settings.RefreshSecret);
 
         if (user is null)
-            return BadRequest(new RefreshTokenResult { Successful = false, Message = "Invalid outdated token." });
+            return BadRequest(new RefreshTokenResult { Successful = false, Message = "Invalid token." });
 
         var refreshToken = await _applicationDbContext.RefreshTokens
             .SingleOrDefaultAsync(token => token.UserId == Guid.Parse(user.Id) &&
-                                           token.Expiration < DateTime.UtcNow &&
                                            token.Token == parameters.RefreshToken);
 
         if (refreshToken is null)
-            return BadRequest(new RefreshTokenResult
-            {
-                Successful = false,
-                Message = "Refresh token is invalid or outdated."
-            });
+            return BadRequest(new RefreshTokenResult { Successful = false, Message = "Invalid token." });
 
-        var refreshedToken = GetJwtSecurityToken(user);
+        if (refreshToken.Expiration < DateTime.UtcNow)
+            return BadRequest(new RefreshTokenResult { Successful = false, Message = "Refresh token is outdated." });
+
+        var token = GetJwtSecurityToken(user, _settings.Secret, _settings.TokenLifetime );
 
         return Ok(new RefreshTokenResult
         {
             Successful = true,
-            Token = new JwtSecurityTokenHandler().WriteToken(refreshedToken)
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Expiration = token.ValidTo
         });
     }
 
-    private JwtSecurityToken GetJwtSecurityToken(IdentityUser identityUser)
-    {
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
-
-        var token = new JwtSecurityToken(
-            issuer: _settings.ValidIssuer,
-            claims: new []
-            {
-                new Claim(ClaimTypes.Name, identityUser.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            },
-            audience: _settings.ValidAudience,
-            expires: DateTime.UtcNow.Add(_settings.TokenLifetime),
-            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-        );
-
-        return token;
-    }
-
-    private async ValueTask<RefreshToken> GetRefreshToken(User user)
+    private async ValueTask<RefreshToken> GetRefreshToken(IdentityUser user)
     {
         var userId = Guid.Parse(user.Id);
 
@@ -151,17 +132,12 @@ public class AccountController : ControllerBase
             await _applicationDbContext.SaveChangesAsync();
         }
 
-        using var randomNumberGenerator = RandomNumberGenerator.Create();
-
-        var bytes = new byte[64];
-        randomNumberGenerator.GetBytes(bytes);
-
-        var base64Number = Convert.ToBase64String(bytes);
+        var refreshJwtToken = GetJwtSecurityToken(user, _settings.RefreshSecret, _settings.RefreshTokenLifetime);
         var refreshToken = new RefreshToken
         {
-            Token = base64Number,
+            Token = new JwtSecurityTokenHandler().WriteToken(refreshJwtToken),
             UserId = userId,
-            Expiration = DateTime.UtcNow.Add(_settings.RefreshTokenLifetime)
+            Expiration = refreshJwtToken.ValidTo
         };
 
         await _applicationDbContext.RefreshTokens.AddAsync(refreshToken);
@@ -170,14 +146,33 @@ public class AccountController : ControllerBase
         return refreshToken;
     }
 
-    private async ValueTask<User?> ParseOutdatedToken(string token)
+    private JwtSecurityToken GetJwtSecurityToken(IdentityUser identityUser, string secret, TimeSpan lifetime)
+    {
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+
+        var token = new JwtSecurityToken(
+            issuer: _settings.ValidIssuer,
+            claims: new []
+            {
+                new Claim(ClaimTypes.Name, identityUser.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            },
+            audience: _settings.ValidAudience,
+            expires: DateTime.UtcNow.Add(lifetime),
+            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+        );
+
+        return token;
+    }
+
+    private async ValueTask<User?> GetUserFromJwtTokenAsync(string token, string secret)
     {
         var tokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience = false,
             ValidateIssuer = false,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
             ValidateLifetime = false
         };
 
@@ -204,6 +199,8 @@ public record AccountControllerSettings
     public string ValidIssuer { get; init; } = null!;
 
     public string Secret { get; init; } = null!;
+
+    public string RefreshSecret { get; init; } = null!;
 
     public TimeSpan TokenLifetime { get; init; }
 
