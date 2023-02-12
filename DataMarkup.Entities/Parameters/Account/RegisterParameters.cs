@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using DataMarkup.Entities.Validators;
 
 namespace DataMarkup.Entities.Parameters.Account;
 
@@ -12,5 +13,6 @@ public record RegisterParameters
     public string? Email { get; set; }
 
     [Required(ErrorMessage = "Password is required.")]
+    [Password]
     public string? Password { get; set; }
 }

@@ -39,7 +39,11 @@ public class AccountController : ControllerBase
         var userExists = await _userManager.FindByNameAsync(parameters.Username);
 
         if (userExists is not null)
-            return Conflict(new RegisterResult { Succesful = false, Message = "User with the same name already exists." });
+            return Conflict(new RegisterResult
+            {
+                Successful = false,
+                Message = "User with the same name already exists."
+            });
 
         var user = new User
         {
@@ -50,11 +54,11 @@ public class AccountController : ControllerBase
         var creationResult = await _userManager.CreateAsync(user, parameters.Password);
 
         if (creationResult.Succeeded)
-            return Ok(new RegisterResult { Succesful = true, Message = default });
+            return Ok(new RegisterResult { Successful = true, Message = default });
 
         return UnprocessableEntity(new RegisterResult
         {
-            Succesful = false,
+            Successful = false,
             Message = "Registration failed. Check requirements and try again."
         });
     }

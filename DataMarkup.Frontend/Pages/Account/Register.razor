@@ -1,59 +1,58 @@
 ﻿@page "/Account/Register"
-@using Microsoft.Extensions.Logging
-@using Microsoft.AspNetCore.Components
 @using DataMarkup.Entities.Parameters.Account
-
+@using DataMarkup.Frontend.Extensions
+@using Microsoft.AspNetCore.Components
+@inject HttpClient HttpClient
+@inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
-@inject ILogger<RegisterParameters> Logger
 
-
-<div class="container-fluid float-left">
+<EditForm Model="@_registerParameters" OnValidSubmit="@RegisterAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    
     <div class="row">
-        <div class="col-md-6">
-            <EditForm Model="@_registerParameters" OnValidSubmit="@HandleValidSubmit" On>
-                <DataAnnotationsValidator/>
-                <ValidationSummary/>
-                <h2>User registration</h2>
-                <div class="form-group">
-                    <label>Username:</label>
-                    <InputText id="username" class="form-control w-50 mb-3" @bind-Value="_registerParameters.Username"/>
-                    <ValidationMessage For="() => _registerParameters.Username"/>
-                </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <InputText id="email" class="form-control w-50 mb-3" @bind-Value="_registerParameters.Email"/>
-                    <ValidationMessage For="() => _registerParameters.Email"/>
-                </div>
-                <div class="form-group">
-                    <label>Password:</label>
-                    <InputText id="password" class="form-control w-50 mb-3" @bind-Value="_registerParameters.Password"/>
-                    <ValidationMessage For="() => _registerParameters.Password"/>
-                </div>
-                <div>
-                    <input class="btn btn-outline-primary" type="submit" @onclick="SubmitClickAsync"/>
-                </div>
-            </EditForm>
+        <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+            <div class="mb-3 text-center">
+                <h3>Registration</h3>
+            </div>
+            <div class="mb-3">
+                <label>Username</label>
+                <InputText @bind-Value="_registerParameters.Username" class="form-control" placeholder="Username" />
+                <ValidationMessage For="() => _registerParameters.Username" />
+            </div>
+            <div class="mb-3">
+                <label>Email</label>
+                <InputText @bind-Value="_registerParameters.Email" class="form-control" placeholder="Email" />
+                <ValidationMessage For="() => _registerParameters.Email" />
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <InputText @bind-Value="_registerParameters.Password" type="password" class="form-control" placeholder="Password" />
+                <ValidationMessage For="() => _registerParameters.Password" />
+            </div>
+            <div class="mb-3 d-grid gap-2">
+                <button type="submit" class="btn btn-dark">Login</button>
+            </div>
         </div>
     </div>
-</div>
+</EditForm>
 
-@code
-{
+@code {
     private readonly RegisterParameters _registerParameters = new();
 
-    private async void SubmitClickAsync()
+    private async void RegisterAsync()
     {
-        // var statusCode = await DataMarkupClient.RegisterAsync(_registerParameters);
-        //
-        // Console.WriteLine(statusCode.ToString());
-        // if (statusCode.IsSuccesStatusCode())
-        //     NavigationManager.NavigateTo("");
-    }
+        var registerResult = await HttpClient.RegisterAsync(_registerParameters);
 
-    private void HandleValidSubmit()
-    {
-        Logger.LogInformation("HandleValidSubmit called");
-
-        // Process the valid form
+        if (registerResult?.Successful is true)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            var message = registerResult?.Message ?? "Registration failed. Check requirements and try again.";
+            
+            await JsRuntime.InvokeVoidAsync("alert", message);
+        }
     }
 }
