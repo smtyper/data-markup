@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace DataMarkup.Frontend;
 
-public class ApiAuthenticationStateProvider : AuthenticationStateProvider
+public class ApplicationAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly ISessionStorageService _sessionStorage;
     private readonly ClaimsPrincipal _anonymousUserClaimsPrincipal = new(new ClaimsIdentity());
 
-    public ApiAuthenticationStateProvider(ISessionStorageService sessionStorage) => _sessionStorage = sessionStorage;
+    public ApplicationAuthenticationStateProvider(ISessionStorageService sessionStorage) =>
+        _sessionStorage = sessionStorage;
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
@@ -26,11 +27,11 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 
             var state = new AuthenticationState(claimPrincipal);
 
-            return state;
+            return await Task.FromResult(state);
         }
         catch (Exception)
         {
-            return new AuthenticationState(_anonymousUserClaimsPrincipal);
+            return await Task.FromResult(new AuthenticationState(_anonymousUserClaimsPrincipal));
         }
     }
 
@@ -38,12 +39,13 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
     {
         var claimsPrincipal = userSession is null ?
             _anonymousUserClaimsPrincipal :
-            new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Name, userSession.Username) }));
+            new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Name, userSession.Username) },
+                "JwtAuth"));
 
-        if (userSession != null)
-            await _sessionStorage.RemoveItemAsync("UserSession");
-        else
+        if (userSession is not null)
             await _sessionStorage.AddAsBase64Async(nameof(UserSession), userSession);
+        else
+            await _sessionStorage.RemoveItemAsync(nameof(UserSession));
 
         var state = new AuthenticationState(claimsPrincipal);
 

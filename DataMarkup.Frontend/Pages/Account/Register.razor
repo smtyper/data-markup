@@ -1,8 +1,7 @@
 ﻿@page "/Account/Register"
 @using DataMarkup.Entities.Parameters.Account
-@using DataMarkup.Frontend.Extensions
 @using Microsoft.AspNetCore.Components
-@inject HttpClient HttpClient
+@inject ApiHttpClient ApiHttpClient
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
 
@@ -31,7 +30,7 @@
                 <ValidationMessage For="() => _registerParameters.Password" />
             </div>
             <div class="mb-3 d-grid gap-2">
-                <button type="submit" class="btn btn-dark">Login</button>
+                <button type="submit" class="btn btn-dark">Register</button>
             </div>
         </div>
     </div>
@@ -40,9 +39,9 @@
 @code {
     private readonly RegisterParameters _registerParameters = new();
 
-    private async void RegisterAsync()
+    private async Task RegisterAsync()
     {
-        var registerResult = await HttpClient.RegisterAsync(_registerParameters);
+        var registerResult = await ApiHttpClient.RegisterAsync(_registerParameters);
 
         if (registerResult?.Successful is true)
         {

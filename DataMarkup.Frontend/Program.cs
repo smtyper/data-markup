@@ -9,9 +9,11 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiUri"]!) });
 builder.Services.AddBlazoredSessionStorage();
-builder.Services.AddScoped<AuthenticationStateProvider, ApiAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, ApplicationAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
+
+builder.Services.AddHttpClient<ApiHttpClient>()
+    .ConfigureHttpClient(httpClient => httpClient.BaseAddress = new Uri(builder.Configuration["ApiUri"]!));
 
 await builder.Build().RunAsync();

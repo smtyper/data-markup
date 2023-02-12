@@ -1,0 +1,64 @@
+﻿@page "/Account/Login"
+@using DataMarkup.Entities.Parameters.Account
+@using DataMarkup.Frontend.Models
+@using Microsoft.AspNetCore.Components
+@inject ApiHttpClient ApiHttpClient
+@inject IJSRuntime JsRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+
+<EditForm Model="@_loginParameters" OnValidSubmit="@AuthenticateAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row">
+        <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+            <div class="mb-3 text-center">
+                <h3>Login</h3>
+            </div>
+            <div class="mb-3">
+                <label>Username</label>
+                <InputText @bind-Value="_loginParameters.Username" class="form-control" placeholder="Username"/>
+                <ValidationMessage For="() => _loginParameters.Username"/>
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <InputText @bind-Value="_loginParameters.Password" type="password" class="form-control" placeholder="Password" />
+                <ValidationMessage For="() => _loginParameters.Password" />
+            </div>
+            <div class="mb-3 d-grid gap-2">
+                <button type="submit" class="btn btn-dark">Login</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private readonly LoginParameters _loginParameters = new();
+
+    private async Task AuthenticateAsync()
+    {
+        var loginResult = await ApiHttpClient.LoginAsync(_loginParameters);
+
+        if (loginResult?.Successful is true)
+        {
+            var userSession = new UserSession
+            {
+                Username = _loginParameters.Username!,
+                Token = loginResult.Token!,
+                RefreshToken = loginResult.RefreshToken!
+            };
+
+            var applicationAuthenticationStateProvider = (ApplicationAuthenticationStateProvider)AuthenticationStateProvider;
+            await applicationAuthenticationStateProvider.UpdateAuthenticationStateAsync(userSession);
+            NavigationManager.NavigateTo("/", true);
+        }
+        else
+        {
+            var message = loginResult?.Message ?? "Something goes wrong. Try again later.";
+            
+            await JsRuntime.InvokeVoidAsync("alert", message);
+        }
+    }
+}

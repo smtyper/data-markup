@@ -6,5 +6,5 @@ public record UserSession
 
     public string Token { get; init; } = null!;
 
-    public DateTime Expiration { get; init; }
+    public string RefreshToken { get; init; } = null!;
 }
