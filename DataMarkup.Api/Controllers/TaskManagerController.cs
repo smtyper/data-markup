@@ -131,6 +131,30 @@ public class TaskManagerController : ControllerBase
         return Ok(new GetTaskTypesResult { Successful = true, TaskTypes = taskTypes, Count = taskTypes.Length });
     }
 
+    [HttpGet("get-task-type/{id:guid}")]
+    public async Task<IActionResult> GetTaskType(Guid id)
+    {
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
+        var taskTypeRaw = await _applicationDbContext.TaskTypes
+            .Include(type => type.QuestionTypes)
+            .Include(type => type.Permissions)
+            .Include(type => type.TaskInstances)
+            .Where(type => type.UserId == currentUser.Id && type.Id == id)
+            .Select(type => type)
+            .SingleOrDefaultAsync();
+
+        if (taskTypeRaw is null)
+            return BadRequest(new GetTaskTypeResult
+            {
+                Successful = false,
+                Message = "Unable to find task type by id."
+            });
+
+        var taskType = taskTypeRaw.Adapt<Entities.Views.TaskType>();
+
+        return Ok(new GetTaskTypeResult { Successful = true, TaskType = taskType });
+    }
+
     [HttpPost]
     [Route("add-task-type")]
     public async Task<IActionResult> AddTaskType([FromBody] TaskTypeParameters taskTypeParameters)
