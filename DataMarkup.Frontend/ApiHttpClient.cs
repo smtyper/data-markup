@@ -76,6 +76,19 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<GetTaskTypeResult?> GetTaskTypeAsync(Guid taskTypeId)
+    {
+        var url = $"TaskManager/get-task-type/{taskTypeId}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<GetTaskTypeResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)

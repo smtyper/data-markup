@@ -1,0 +1,32 @@
+﻿@page "/TaskManager/get-task-type/{Id}"
+@attribute [Authorize]
+
+@using DataMarkup.Entities.Views
+@using Task = System.Threading.Tasks.Task
+
+@inject ApiHttpClient ApiHttpClient;
+@inject NavigationManager NavigationManager;
+
+
+<h3>TaskType</h3>
+
+@code {
+    [Parameter]
+    public Guid Id { get; init; }
+    
+    private bool _successful;
+    private TaskType _taskType = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(Id);
+
+        _successful = getTaskTypeResult?.Successful is true;
+
+        if (_successful) 
+            _taskType = getTaskTypeResult?.TaskType!;
+        else
+            NavigationManager.NavigateTo("/NotFound");
+    }
+
+}
