@@ -15,16 +15,18 @@
     <div class="row">
         <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
             <div class="mb-3 text-center">
-                <h3>Login</h3>
+                <h3 class="fw-bold">Login</h3>
             </div>
             <div class="mb-3">
-                <label>Username</label>
-                <InputText @bind-Value="_loginParameters.Username" class="form-control" placeholder="Username"/>
+                <label class="fw-bold">Username</label>
+                <InputText @bind-Value="_loginParameters.Username" class="form-control"
+                           placeholder="Username"/>
                 <ValidationMessage For="() => _loginParameters.Username"/>
             </div>
             <div class="mb-3">
-                <label>Password</label>
-                <InputText @bind-Value="_loginParameters.Password" type="password" class="form-control" placeholder="Password" />
+                <label class="fw-bold">Password</label>
+                <InputText @bind-Value="_loginParameters.Password" type="password" class="form-control"
+                           placeholder="Password" />
                 <ValidationMessage For="() => _loginParameters.Password" />
             </div>
             <div class="mb-3 d-grid gap-2">
@@ -34,7 +36,8 @@
     </div>
 </EditForm>
 
-@code {
+@code
+{
     private readonly LoginParameters _loginParameters = new();
 
     private async Task AuthenticateAsync()
@@ -47,7 +50,9 @@
             {
                 Username = _loginParameters.Username!,
                 Token = loginResult.Token!,
-                RefreshToken = loginResult.RefreshToken!
+                RefreshToken = loginResult.RefreshToken!,
+                TokenExpiration = loginResult.TokenExpiration!.Value,
+                RefreshTokenExpiration = loginResult.RefreshTokenExpiration!.Value
             };
 
             var applicationAuthenticationStateProvider = (ApplicationAuthenticationStateProvider)AuthenticationStateProvider;

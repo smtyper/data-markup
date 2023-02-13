@@ -4,8 +4,12 @@ using Blazored.SessionStorage;
 
 namespace DataMarkup.Frontend.Extensions;
 
-public static class SessionStorageExtensions
+public static class Extensions
 {
+    public static string CutIfMoreThan(this string text, int count) => text.Length < count ?
+        text :
+        $"{string.Concat(text.Take(count))}...";
+
     public static async ValueTask AddAsBase64Async<T>(this ISessionStorageService sessionStorageService, string key,
         T value, CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using DataMarkup.Entities.Validators;
 
 namespace DataMarkup.Entities.Parameters.TaskManager;
 
@@ -30,11 +31,13 @@ public record QuestionTypeParameters
     public string StaticContent { get; set; } = null!;
 
     [Required]
+    [Regex]
     public string DynamicContentConstraint { get; set; } = null!;
 
     [Required]
     public string AnswerDescription { get; set; } = null!;
 
     [Required]
+    [Regex]
     public string AnswerConstraint { get; set; } = null!;
 }

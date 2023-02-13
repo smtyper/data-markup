@@ -1,0 +1,63 @@
+﻿@page "/TaskManager"
+@attribute [Authorize]
+
+@using DataMarkup.Entities.Views
+@using DataMarkup.Frontend.Extensions
+@using DataMarkup.Frontend.Models
+@using Task = System.Threading.Tasks.Task
+
+@inject ApiHttpClient ApiHttpClient;
+
+<h3 class="fw-bold">Task Manager</h3>
+
+<div class="container-fluid mt-3">
+    @foreach (var taskTypesRow in _taskTypes
+        .Select(taskType => new Card
+        {
+            Title = taskType.Name,
+            Subtitle = $"payment: {taskType.Payment}, max solutions: {taskType.SolutionsCount}",
+            TextArea = taskType.Instruction.CutIfMoreThan(70),
+            ButtonText = "To task"
+        })
+        .Prepend(new Card
+        {
+            Title = "New task",
+            Subtitle = string.Empty,
+            TextArea = "Instruction preview...",
+            ButtonText = "Create",
+        })
+        .Select((taskType, index) => (taskType, index))
+        .GroupBy(pair => pair.index / 4))
+    {
+        <div class="row mb-3">
+            @foreach (var (taskType, _) in taskTypesRow)
+            {
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">@taskType.Title</h5>
+                            <h6 class="card-subtitle">@taskType.Subtitle</h6>
+                            <p class="card-text">@taskType.TextArea</p>
+                            <a class="btn btn-secondary" href="/TaskManager/add-task-type">@taskType.ButtonText</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyCollection<TaskType> _taskTypes = ArraySegment<TaskType>.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var taskTypesResult = await ApiHttpClient.GetTaskTypesAsync();
+
+        _taskTypes = taskTypesResult!.Successful ?
+            taskTypesResult.TaskTypes :
+            Array.Empty<TaskType>();
+
+        await base.OnInitializedAsync();
+    }
+}

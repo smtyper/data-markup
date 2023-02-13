@@ -15,18 +15,21 @@
                 <h3>Registration</h3>
             </div>
             <div class="mb-3">
-                <label>Username</label>
-                <InputText @bind-Value="_registerParameters.Username" class="form-control" placeholder="Username" />
+                <label class="fw-bold">Username</label>
+                <InputText @bind-Value="_registerParameters.Username" class="form-control"
+                           placeholder="Username" />
                 <ValidationMessage For="() => _registerParameters.Username" />
             </div>
             <div class="mb-3">
-                <label>Email</label>
-                <InputText @bind-Value="_registerParameters.Email" class="form-control" placeholder="Email" />
+                <label class="fw-bold">Email</label>
+                <InputText @bind-Value="_registerParameters.Email" class="form-control"
+                           placeholder="Email" />
                 <ValidationMessage For="() => _registerParameters.Email" />
             </div>
             <div class="mb-3">
-                <label>Password</label>
-                <InputText @bind-Value="_registerParameters.Password" type="password" class="form-control" placeholder="Password" />
+                <label class="fw-bold">Password</label>
+                <InputText @bind-Value="_registerParameters.Password" type="password" class="form-control"
+                           placeholder="Password" />
                 <ValidationMessage For="() => _registerParameters.Password" />
             </div>
             <div class="mb-3 d-grid gap-2">
@@ -36,7 +39,8 @@
     </div>
 </EditForm>
 
-@code {
+@code
+{
     private readonly RegisterParameters _registerParameters = new();
 
     private async Task RegisterAsync()

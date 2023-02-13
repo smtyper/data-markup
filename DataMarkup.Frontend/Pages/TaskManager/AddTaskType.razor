@@ -1,0 +1,187 @@
+﻿@page "/TaskManager/add-task-type"
+@attribute [Authorize]
+
+@using DataMarkup.Entities.Parameters.TaskManager
+@using DataMarkup.Entities
+@using DataMarkup.Frontend.Extensions
+@using DataMarkup.Frontend.Models
+
+@inject ApiHttpClient ApiHttpClient;
+@inject NavigationManager NavigationManager;
+@inject IJSRuntime JsRuntime
+
+<h3>Add task type</h3>
+
+<div class="container-fluid float-left mt-3">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <EditForm Model="@_taskTypeParameters" OnValidSubmit="@AddTaskTypeAsync">
+                <DataAnnotationsValidator />
+            
+                <div class="form-group">
+                    <label class="fw-bold">Task name</label>
+                    <InputText @bind-Value="_taskTypeParameters.Name" class="form-control mb-3"
+                               placeholder="@nameof(TaskTypeParameters.Name)"/>
+                    <ValidationMessage For="() => _taskTypeParameters.Name"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Solutions count</label>
+                    <InputNumber @bind-Value="_taskTypeParameters.SolutionsCount" class="form-control mb-3"/>
+                    <ValidationMessage For="() => _taskTypeParameters.SolutionsCount"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Payment</label>
+                    <InputNumber @bind-Value="_taskTypeParameters.Payment" class="form-control mb-3"/>
+                    <ValidationMessage For="() => _taskTypeParameters.Payment"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Instruction</label>
+                    <InputTextArea @bind-Value="_taskTypeParameters.Instruction" class="form-control mb-3" rows="14"
+                                   placeholder="Describe the task execution algorithm"/>
+                    <ValidationMessage For="() => _taskTypeParameters.Instruction"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Access type</label>
+                    <InputSelect @bind-Value="_taskTypeParameters.AccessType">
+                        @foreach (var accessType in Enum.GetValues(typeof(AccessType)))
+                        {
+                            <option value="@accessType"> @accessType</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => _taskTypeParameters.AccessType"/>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-dark">Add to task</button>
+                </div>
+            </EditForm>
+        </div>
+        
+        <div class="col-md-6">
+            <EditForm Model="@_questionTypeParameters" OnValidSubmit="@AddQuestionType">
+                <DataAnnotationsValidator/>
+
+                <div class="form-group">
+                    <label class="fw-bold">Static content - will be displayed on each instance of the question.</label>
+                    <InputText @bind-Value="_questionTypeParameters.StaticContent" class="form-control mb-3"
+                               placeholder="Static content"/>
+                    <ValidationMessage For="() => _questionTypeParameters.StaticContent"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">
+                        Dynamic content constraint - regular expression for each question instance.
+                    </label>
+                    <InputText @bind-Value="_questionTypeParameters.DynamicContentConstraint" class="form-control mb-3"
+                               placeholder="Dynamic content regex"/>
+                    <ValidationMessage For="() => _questionTypeParameters.DynamicContentConstraint"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Answer description - a few words about how the answer should look like.</label>
+                    <InputText @bind-Value="_questionTypeParameters.AnswerDescription" class="form-control mb-3"
+                               placeholder="Answer description"/>
+                    <ValidationMessage For="() => _questionTypeParameters.AnswerDescription"/>
+                </div>
+                <div class="form-group">
+                    <label class="fw-bold">Answer constraint - regular expression for each answer instance.</label>
+                    <InputText @bind-Value="_questionTypeParameters.AnswerConstraint" class="form-control mb-3"
+                               placeholder="Answer constraint regex"/>
+                    <ValidationMessage For="() => _questionTypeParameters.AnswerConstraint"/>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-dark">Add to task</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+    
+    @foreach (var questionTypeRow in _taskTypeParameters.Questions
+        .Select((question, index) => (new Card
+        {
+            Title = question.StaticContent,
+            Subtitle = question.DynamicContentConstraint,
+            TextArea = $"{question.AnswerConstraint}: {question.AnswerDescription}".CutIfMoreThan(70),
+            ButtonText = "Edit"
+        }, index))
+        .GroupBy(pair => pair.index / 6))
+    {
+        <div class="row mb-3">
+            @foreach (var (questionType, index) in questionTypeRow)
+            {
+                <div class="col-md-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">@questionType.Title</h5>
+                            <h6 class="card-subtitle">@questionType.Subtitle</h6>
+                            <p class="card-text">@questionType.TextArea</p>
+                            <a class="position-relative bottom-10 btn btn-secondary"
+                               onclick="@(() => EditQuestionType(index))">
+                                Edit
+                            </a>
+                            <a class="position-relative bottom-10 btn btn-danger"
+                               onclick="@(() => RemoveQuestionType(index))">
+                                Remove
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code 
+{
+    private readonly TaskTypeParameters _taskTypeParameters = new()
+    {
+        AccessType = AccessType.Free,
+        Questions = new List<QuestionTypeParameters>()
+    };
+
+    private List<QuestionTypeParameters> QuestionTypes => (List<QuestionTypeParameters>)_taskTypeParameters.Questions;
+
+    private QuestionTypeParameters _questionTypeParameters = new();
+
+    private void AddQuestionType()
+    {
+        QuestionTypes.Add(_questionTypeParameters);
+        _questionTypeParameters = new QuestionTypeParameters();
+        
+        StateHasChanged();
+    }
+
+    private void EditQuestionType(int index)
+    {
+        var editedQuestion = QuestionTypes[index];
+
+        _questionTypeParameters = new QuestionTypeParameters
+        {
+            StaticContent = editedQuestion.StaticContent,
+            DynamicContentConstraint = editedQuestion.DynamicContentConstraint,
+            AnswerDescription = editedQuestion.AnswerDescription,
+            AnswerConstraint = editedQuestion.AnswerConstraint
+        };
+        QuestionTypes.RemoveAt(index);
+        
+        StateHasChanged();
+    }
+
+    private void RemoveQuestionType(int index)
+    {
+        QuestionTypes.RemoveAt(index);
+        
+        StateHasChanged();
+    }
+
+    private async Task AddTaskTypeAsync()
+    {
+        var addTaskTypeResult = await ApiHttpClient.AddTaskTypeAsync(_taskTypeParameters);
+
+        if (addTaskTypeResult?.Successful is true)
+            NavigationManager.NavigateTo("/TaskManager");
+        else
+        {
+            var message = addTaskTypeResult?.Message ?? "Something goes wrong. Try again later.";
+            
+            await JsRuntime.InvokeVoidAsync("alert", message);
+        }
+    }
+}

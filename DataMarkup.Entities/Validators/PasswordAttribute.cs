@@ -11,10 +11,7 @@ public class PasswordAttribute : ValidationAttribute
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        var passwordString = value!.ToString();
-
-        if (passwordString!.Contains('!'))
-            return ValidationResult.Success;
+        var passwordString = value!.ToString()!;
 
         if (passwordString.Length < 6)
             return new ValidationResult("The password minimal length is 6 characters.",
