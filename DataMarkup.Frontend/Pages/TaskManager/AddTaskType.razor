@@ -10,14 +10,14 @@
 @inject NavigationManager NavigationManager;
 @inject IJSRuntime JsRuntime
 
-<h3>Add task type</h3>
-
 <div class="container-fluid float-left mt-3">
+    <h3>Task parameters</h3>
+    
     <div class="row mb-4">
         <div class="col-md-6">
             <EditForm Model="@_taskTypeParameters" OnValidSubmit="@AddTaskTypeAsync">
-                <DataAnnotationsValidator />
-            
+                <DataAnnotationsValidator/>
+
                 <div class="form-group">
                     <label class="fw-bold">Task name</label>
                     <InputText @bind-Value="_taskTypeParameters.Name" class="form-control mb-3"
@@ -55,7 +55,7 @@
                 </div>
             </EditForm>
         </div>
-        
+
         <div class="col-md-6">
             <EditForm Model="@_questionTypeParameters" OnValidSubmit="@AddQuestionType">
                 <DataAnnotationsValidator/>
@@ -92,7 +92,7 @@
             </EditForm>
         </div>
     </div>
-    
+
     @foreach (var questionTypeRow in _taskTypeParameters.Questions
         .Select((question, index) => (new Card
         {
@@ -103,7 +103,7 @@
         }, index))
         .GroupBy(pair => pair.index / 6))
     {
-        <div class="row mb-3">
+        <div class="row mb">
             @foreach (var (questionType, index) in questionTypeRow)
             {
                 <div class="col-md-2">
