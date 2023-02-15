@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Blazored.SessionStorage;
+using Blazored.LocalStorage;
 using DataMarkup.Entities.Parameters.Account;
 using DataMarkup.Entities.Parameters.TaskManager;
 using DataMarkup.Entities.Views.Account;
@@ -15,14 +15,14 @@ namespace DataMarkup.Frontend;
 public class ApiHttpClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ISessionStorageService _sessionStorage;
+    private readonly ILocalStorageService _localStorageService;
     private readonly ApplicationAuthenticationStateProvider _applicationAuthenticationStateProvider;
 
-    public ApiHttpClient(HttpClient httpClient, ISessionStorageService sessionStorage,
+    public ApiHttpClient(HttpClient httpClient, ILocalStorageService localStorageService,
         AuthenticationStateProvider authenticationStateProvider)
     {
         _httpClient = httpClient;
-        _sessionStorage = sessionStorage;
+        _localStorageService = localStorageService;
         _applicationAuthenticationStateProvider = (ApplicationAuthenticationStateProvider) authenticationStateProvider;
     }
 
@@ -116,7 +116,7 @@ public class ApiHttpClient
             return refreshResult.Token;
         }
 
-        var userSession = await _sessionStorage.GetBase64ValueAsync<UserSession>(nameof(UserSession)) ??
+        var userSession = await _localStorageService.GetBase64ValueAsync<UserSession>(nameof(UserSession)) ??
                           throw new UnauthorizedAccessException();
 
         var token = DateTime.UtcNow.AddSeconds(-45) > userSession?.TokenExpiration ?
