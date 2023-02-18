@@ -89,6 +89,19 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<UpdateTaskTypeResult?> UpdateTaskTypeAsync(UpdateTaskTypeParameters parameters)
+    {
+        const string url = "TaskManager/update-task-type";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(parameters) };
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<UpdateTaskTypeResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)
@@ -132,7 +145,7 @@ public class ApiHttpClient
 
     private async ValueTask<RefreshTokenResult> RefreshTokenAsync(RefreshTokenParameters refreshTokenParameters)
     {
-        const string url = "refresh-token";
+        const string url = "Account/refresh-token";
 
         using var response = await _httpClient.PostAsJsonAsync(url, refreshTokenParameters);
 

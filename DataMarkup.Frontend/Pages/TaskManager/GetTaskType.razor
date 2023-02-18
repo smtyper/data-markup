@@ -4,6 +4,8 @@
 @using DataMarkup.Entities.Views
 @using Task = System.Threading.Tasks.Task
 @using DataMarkup.Entities
+@using DataMarkup.Entities.Parameters.TaskManager
+@using DataMarkup.Frontend.Models
 
 @inject ApiHttpClient ApiHttpClient;
 @inject NavigationManager NavigationManager;
@@ -11,35 +13,51 @@
 <div class="container-fluid float-left mt-3">
     <h3>Task type:</h3>
     
+    @if (_alert.Show)
+    {
+        <div class="alert alert-@(_alert.TypeString)" role="alert">
+            @_alert.Message
+        </div>
+    }
+    
     <div class="row-mb-4">
         <div class="col-md-6">
-            <EditForm Model="_taskType">
+            <EditForm Model="_updateTaskTypeParameters" OnValidSubmit="@UpdateTaskTypeAsync">
                 <DataAnnotationsValidator/>
 
                 <div class="form-group">
                     <label class="fw-bold">Task name</label>
-                    <input value="@_taskType.Name" class="form-control mb-3" disabled/>
+                    <InputText @bind-Value="@_updateTaskTypeParameters.Name" class="form-control mb-3"/>
+                    <ValidationMessage For="() => _updateTaskTypeParameters.Name"/>
                 </div>
                 <div class="form-group">
                     <label class="fw-bold">Solutions count</label>
-                    <input value="@_taskType.SolutionsCount" class="form-control mb-3" disabled/>
+                    <InputNumber @bind-Value="@_updateTaskTypeParameters.SolutionsCount" class="form-control mb-3"/>
+                    <ValidationMessage For="() => _updateTaskTypeParameters.SolutionsCount"/>
                 </div>
                 <div class="form-group">
                     <label class="fw-bold">Payment</label>
-                    <input value="@_taskType.Payment" class="form-control mb-3" disabled/>
+                    <InputNumber @bind-Value="@_updateTaskTypeParameters.Payment" class="form-control mb-3"/>
+                    <ValidationMessage For="() => _updateTaskTypeParameters.Payment"/>
                 </div>
                 <div class="form-group">
                     <label class="fw-bold">Instruction</label>
-                    <textarea value="@_taskType.Instruction" class="form-control mb-3" rows="10" disabled></textarea>
+                    <InputTextArea @bind-Value="@_updateTaskTypeParameters.Instruction" class="form-control mb-3"
+                                   rows="10"/>
+                    <ValidationMessage For="() => _updateTaskTypeParameters.Instruction"/>
                 </div>
                 <div class="form-group">
                     <label class="fw-bold">Access type</label>
-                    <select type="" value="@_taskType.AccessType" class="form-select mb-3" disabled>
+                    <InputSelect @bind-Value="_updateTaskTypeParameters.AccessType" class="form-select mb-3">
                         @foreach (var accessType in Enum.GetValues(typeof(AccessType)))
                         {
                             <option value="@accessType"> @accessType</option>
                         }
-                    </select>
+                    </InputSelect>
+                    <ValidationMessage For="() => _updateTaskTypeParameters.AccessType"/>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-dark">Update</button>
                 </div>
 
             </EditForm>
@@ -48,7 +66,7 @@
 
     <h3>Questions:</h3>
 
-    @foreach (var questionRowGroup in (_taskType.QuestionTypes ?? Array.Empty<QuestionType>())
+    @foreach (var questionRowGroup in (_questionTypes)
         .Select((question, index) => (question, index))
         .GroupBy(pair => pair.index / 3))
     {
@@ -76,20 +94,68 @@
     [Parameter]
     public string? IdString { get; set; }
     
+    private Guid _id;
     private bool _successful;
-    private TaskType _taskType = new();
+    private UpdateTaskTypeParameters _updateTaskTypeParameters = new();
+    private IReadOnlyCollection<QuestionType> _questionTypes = Array.Empty<QuestionType>();
 
+    private Alert _alert = new() { Show = false };
+    
     protected override async Task OnInitializedAsync()
     {
-        var id = Guid.Parse(IdString!);
-        var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(id);
+        if (IdString is null)
+            NavigationManager.NavigateTo("/NotFound");
+        
+        _id = Guid.Parse(IdString!);
+        var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(_id);
 
         _successful = getTaskTypeResult?.Successful is true;
 
-        if (_successful) 
-            _taskType = getTaskTypeResult?.TaskType!;
+        var taskType = getTaskTypeResult!.TaskType!;
+
+        if (_successful)
+        {
+            _updateTaskTypeParameters = new UpdateTaskTypeParameters
+            {
+                TaskTypeId = _id,
+                Name = taskType.Name,
+                SolutionsCount = taskType.SolutionsCount,
+                Payment = taskType.Payment,
+                Instruction = taskType.Instruction,
+                AccessType = taskType.AccessType
+            };
+            _questionTypes = taskType.QuestionTypes;
+        }
         else
             NavigationManager.NavigateTo("/NotFound");
+        
+        await base.OnInitializedAsync();
+    }
+
+    private async Task UpdateTaskTypeAsync()
+    {
+        var updateResult = await ApiHttpClient.UpdateTaskTypeAsync(_updateTaskTypeParameters);
+
+        if (updateResult?.Successful is true)
+            await ShowAlertAsync(AlertType.Success, "Task type was successfully updated.");
+        else
+            await ShowAlertAsync(AlertType.Danger, updateResult?.Message ?? "Something goes wrong. Try again later.");
+    }
+
+    private async ValueTask ShowAlertAsync(AlertType alertType, string message)
+    {
+        _alert = _alert with
+        {
+            Show = true,
+            Message = message,
+            Type = alertType
+        };
+        StateHasChanged();
+
+        await Task.Delay(3000);
+
+        _alert = _alert with { Show = false };
+        StateHasChanged();
     }
 
 }

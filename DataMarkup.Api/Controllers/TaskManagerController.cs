@@ -200,6 +200,38 @@ public class TaskManagerController : ControllerBase
     }
 
     [HttpPost]
+    [Route("update-task-type")]
+    public async Task<IActionResult> UpdateTaskTypeAsync([FromBody] UpdateTaskTypeParameters parameters)
+    {
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
+        var taskType = await _applicationDbContext.TaskTypes
+            .SingleOrDefaultAsync(taskType => taskType.UserId == currentUser.Id &&
+                                              taskType.Id == parameters.TaskTypeId);
+
+        if (taskType is null)
+            return BadRequest(new UpdateTaskTypeResult
+            {
+                Successful = false,
+                Message = "Unable to find task type by id."
+            });
+
+        _applicationDbContext.Entry(taskType).State = EntityState.Detached;
+
+        var updatedTaskType = taskType with
+        {
+            Name = parameters.Name,
+            SolutionsCount = parameters.SolutionsCount,
+            Payment = parameters.Payment,
+            Instruction = parameters.Instruction,
+            AccessType = parameters.AccessType
+        };
+        _applicationDbContext.Update(updatedTaskType);
+        await _applicationDbContext.SaveChangesAsync();
+
+        return Ok(new UpdateTaskTypeResult { Successful = true });
+    }
+
+    [HttpPost]
     [Route("add-task-instances")]
     public async Task<IActionResult> AddTaskInstances([FromBody] TaskInstancesParameters taskInstancesParameters)
     {
