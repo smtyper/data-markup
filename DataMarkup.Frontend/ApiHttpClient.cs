@@ -6,7 +6,6 @@ using DataMarkup.Entities.Parameters.Account;
 using DataMarkup.Entities.Parameters.TaskManager;
 using DataMarkup.Entities.Views.Account;
 using DataMarkup.Entities.Views.TaskManager;
-using DataMarkup.Frontend.Extensions;
 using DataMarkup.Frontend.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 

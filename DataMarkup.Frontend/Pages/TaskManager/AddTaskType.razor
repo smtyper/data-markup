@@ -1,17 +1,23 @@
 ﻿@page "/TaskManager/add-task-type"
+@inherits Base
 @attribute [Authorize]
 
 @using DataMarkup.Entities.Parameters.TaskManager
 @using DataMarkup.Entities
-@using DataMarkup.Frontend.Extensions
 @using DataMarkup.Frontend.Models
 
 @inject ApiHttpClient ApiHttpClient;
 @inject NavigationManager NavigationManager;
-@inject IJSRuntime JsRuntime
 
 <div class="container-fluid float-left mt-3">
     <h3>Task parameters</h3>
+    
+    @if (Alert.Show)
+    {
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
+    }
     
     <div class="row mb-4">
         <div class="col-md-6">
@@ -94,35 +100,29 @@
     </div>
 
     @foreach (var questionTypeRow in _taskTypeParameters.Questions
-        .Select((question, index) => (new Card
+        .Select(question => new Card
         {
             Title = question.StaticContent,
             Subtitle = question.DynamicContentConstraint,
             TextArea = $"{question.AnswerConstraint}: {question.AnswerDescription}".CutIfMoreThan(70),
             ButtonText = "Edit"
-        }, index))
-        .GroupBy(pair => pair.index / 6))
+        })
+        .SepareteIntoRows(6))
     {
-        <div class="row mb">
-            @foreach (var (questionType, index) in questionTypeRow)
+        <div class="row mb-2">
+            @foreach (var (card, index, columnWidth) in questionTypeRow)
             {
-                <div class="col-md-2">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">@questionType.Title</h5>
-                            <h6 class="card-subtitle">@questionType.Subtitle</h6>
-                            <p class="card-text">@questionType.TextArea</p>
-                            <a class="position-relative bottom-10 btn btn-secondary"
-                               onclick="@(() => EditQuestionType(index))">
-                                Edit
-                            </a>
-                            <a class="position-relative bottom-10 btn btn-danger"
-                               onclick="@(() => RemoveQuestionType(index))">
-                                Remove
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <CardBox Width="@columnWidth"
+                         Title="@card.Title"
+                         SubTitle="@card.Subtitle"
+                         TextArea="@card.TextArea"
+                         Buttons="@(new []
+                                  {
+                                      new CardBox.Button(CardBox.ButtonType.Dark, "Edit", 
+                                          OnClick: _ => EditQuestionType(index)),
+                                      new CardBox.Button(CardBox.ButtonType.Danger, "Remove", 
+                                          OnClick: _ => RemoveQuestionType(index)), 
+                                  })"/>
             }
         </div>
     }
@@ -140,15 +140,17 @@
 
     private QuestionTypeParameters _questionTypeParameters = new();
 
-    private void AddQuestionType()
+    private Task AddQuestionType()
     {
         QuestionTypes.Add(_questionTypeParameters);
         _questionTypeParameters = new QuestionTypeParameters();
         
         StateHasChanged();
+
+        return Task.CompletedTask;
     }
 
-    private void EditQuestionType(int index)
+    private ValueTask EditQuestionType(int index)
     {
         var editedQuestion = QuestionTypes[index];
 
@@ -162,13 +164,17 @@
         QuestionTypes.RemoveAt(index);
         
         StateHasChanged();
+        
+        return ValueTask.CompletedTask;
     }
 
-    private void RemoveQuestionType(int index)
+    private ValueTask RemoveQuestionType(int index)
     {
         QuestionTypes.RemoveAt(index);
         
         StateHasChanged();
+
+        return ValueTask.CompletedTask;
     }
 
     private async Task AddTaskTypeAsync()
@@ -179,9 +185,7 @@
             NavigationManager.NavigateTo("/TaskManager");
         else
         {
-            var message = addTaskTypeResult?.Message ?? "Something goes wrong. Try again later.";
-            
-            await JsRuntime.InvokeVoidAsync("alert", message);
+            await ShowAlertAsync(AlertType.Danger, addTaskTypeResult?.Message ?? DefaultErrorMessage);
         }
     }
 }

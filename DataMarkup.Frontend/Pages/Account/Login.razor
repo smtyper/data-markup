@@ -1,12 +1,20 @@
 ﻿@page "/Account/Login"
+@inherits Base
+
 @using DataMarkup.Entities.Parameters.Account
 @using DataMarkup.Frontend.Models
 @using Microsoft.AspNetCore.Components
 @inject ApiHttpClient ApiHttpClient
-@inject IJSRuntime JsRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
+
+@if (Alert.Show)
+{
+    <AlertMessage AlertType="@Alert.TypeString"
+                  Title="@Alert.Title"
+                  Message="@Alert.Message"></AlertMessage>
+}
 
 <EditForm Model="@_loginParameters" OnValidSubmit="@AuthenticateAsync">
     <DataAnnotationsValidator />
@@ -61,9 +69,7 @@
         }
         else
         {
-            var message = loginResult?.Message ?? "Something goes wrong. Try again later.";
-            
-            await JsRuntime.InvokeVoidAsync("alert", message);
+            await ShowAlertAsync(AlertType.Danger, loginResult?.Message ?? DefaultErrorMessage);
         }
     }
 }

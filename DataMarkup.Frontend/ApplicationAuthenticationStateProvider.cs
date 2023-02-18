@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using Blazored.LocalStorage;
-using DataMarkup.Frontend.Extensions;
 using DataMarkup.Frontend.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 

@@ -1,16 +1,25 @@
 ﻿@page "/TaskManager"
+@inherits Base
 @attribute [Authorize]
 
 @using DataMarkup.Entities.Views
-@using DataMarkup.Frontend.Extensions
 @using DataMarkup.Frontend.Models
 @using Task = System.Threading.Tasks.Task
 
 @inject ApiHttpClient ApiHttpClient;
 
-<h3 class="fw-bold">Task Manager</h3>
 
 <div class="container-fluid mt-3">
+
+    @if (Alert.Show)
+    {
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
+    }
+
+    <h3 class="fw-bold">Task Manager</h3>
+
     @foreach (var taskTypesRow in _taskTypes
         .Select(taskType => new TaskTypeCard
         {
@@ -18,7 +27,7 @@
             Subtitle = $"payment: {taskType.Payment}, max solutions: {taskType.SolutionsCount}",
             TextArea = taskType.Instruction.CutIfMoreThan(70),
             ButtonText = "To task",
-            ButtonHref = $"/TaskManager/get-task-type/{taskType.Id}"
+            ButtonHref = $"/TaskManager/task-type/{taskType.Id}"
         })
         .Prepend(new TaskTypeCard
         {
@@ -28,24 +37,20 @@
             ButtonText = "Create",
             ButtonHref = "/TaskManager/add-task-type"
         })
-        .Select((taskType, index) => (taskType, index))
-        .GroupBy(pair => pair.index / 4))
+        .SepareteIntoRows(4))
     {
         <div class="row mb-3">
-            @foreach (var (taskTypeCard, _) in taskTypesRow)
+            @foreach (var (card, _, columnWidth) in taskTypesRow)
             {
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">@taskTypeCard.Title</h5>
-                            <h6 class="card-subtitle">@taskTypeCard.Subtitle</h6>
-                            <p class="card-text">@taskTypeCard.TextArea</p>
-                            <a class="btn btn-secondary" href="@taskTypeCard.ButtonHref">
-                                @taskTypeCard.ButtonText
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <CardBox Width="@columnWidth"
+                         Title="@card.Title"
+                         SubTitle="@card.Subtitle"
+                         TextArea="@card.TextArea"
+                         Buttons="@(new []
+                                  {
+                                      new CardBox.Button(CardBox.ButtonType.Secondary, card.ButtonText,
+                                          Href: card.ButtonHref)
+                                  })"/>
             }
         </div>
     }

@@ -1,0 +1,62 @@
+﻿<div class="col-md-@Width">
+    <div class="card mb-2">
+        <div class="card-body">
+            <h5 class="card-title fw-bold mb-2">@Title</h5>
+            <h6 class="card-subtitle mb-2 text-muted">@SubTitle</h6>
+            <p class="card-text">@(TextArea)</p>
+            @foreach (var button in Buttons)
+            {
+                if (button.OnClick is not null)
+                {
+                    <a class="position-relative mx-1 btn @button.TypeString"
+                       onclick="@button.OnClick">
+                        @button.Text
+                    </a>
+                }
+
+                if (button.Href is not null)
+                {
+                    <a class="position-relative mx-1 btn @button.TypeString"
+                       href="@button.Href">
+                        @button.Text
+                    </a>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Width { get; init; } = 3;
+    
+    [Parameter]
+    public string Title { get; init; } = null!;
+
+    [Parameter]
+    public string SubTitle { get; init; } = null!;
+
+    [Parameter]
+    public string TextArea { get; init; } = null!;
+
+    [Parameter]
+    public IReadOnlyCollection<Button> Buttons { get; init; } = Array.Empty<Button>();
+
+    public record Button(ButtonType Type, string? Text, string? Href = null, Func<EventArgs, ValueTask>? OnClick = null)
+    {
+        public string TypeString => $"btn-{Type.ToString().ToLower()}";
+    };
+    
+    public enum ButtonType
+    {
+        Primary,
+        Secondary,
+        Success,
+        Danger,
+        Warning,
+        Info,
+        Light,
+        Dark
+    }
+
+}

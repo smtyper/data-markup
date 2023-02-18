@@ -1,9 +1,18 @@
 ﻿@page "/Account/Register"
+@inherits Base;
+
 @using DataMarkup.Entities.Parameters.Account
+@using DataMarkup.Frontend.Models
 @using Microsoft.AspNetCore.Components
 @inject ApiHttpClient ApiHttpClient
-@inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
+
+@if (Alert.Show)
+{
+    <AlertMessage AlertType="@Alert.TypeString"
+                  Title="@Alert.Title"
+                  Message="@Alert.Message"></AlertMessage>
+}
 
 <EditForm Model="@_registerParameters" OnValidSubmit="@RegisterAsync">
     <DataAnnotationsValidator />
@@ -53,9 +62,7 @@
         }
         else
         {
-            var message = registerResult?.Message ?? "Registration failed. Check requirements and try again.";
-            
-            await JsRuntime.InvokeVoidAsync("alert", message);
+            await ShowAlertAsync(AlertType.Danger, registerResult?.Message ?? DefaultErrorMessage);
         }
     }
 }

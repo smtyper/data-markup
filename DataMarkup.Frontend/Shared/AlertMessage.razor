@@ -1,0 +1,18 @@
+﻿<div class="alert alert-@AlertType" role="alert">
+    <strong>@Title</strong>
+    <span class="text-nowrap">
+        @Message
+    </span>
+</div>
+
+@code {
+
+    [Parameter]
+    public string AlertType { get; init; } = null!;
+
+    [Parameter]
+    public string? Title { get; init; }
+    
+    [Parameter]
+    public string Message { get; init; } = null!;
+}

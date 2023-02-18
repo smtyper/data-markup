@@ -1,4 +1,5 @@
-﻿@page "/TaskManager/get-task-type/{IdString}"
+﻿@page "/TaskManager/task-type/{IdString}"
+@inherits Base
 @attribute [Authorize]
 
 @using DataMarkup.Entities.Views
@@ -13,11 +14,11 @@
 <div class="container-fluid float-left mt-3">
     <h3>Task type:</h3>
     
-    @if (_alert.Show)
+    @if (Alert.Show)
     {
-        <div class="alert alert-@(_alert.TypeString)" role="alert">
-            @_alert.Message
-        </div>
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
     }
     
     <div class="row-mb-4">
@@ -66,24 +67,26 @@
 
     <h3>Questions:</h3>
 
-    @foreach (var questionRowGroup in (_questionTypes)
-        .Select((question, index) => (question, index))
-        .GroupBy(pair => pair.index / 3))
+    @foreach (var questionRow in _questionTypes
+        .Select(questionType => new Card
+        {
+            Title = "Static content:",
+            Subtitle = questionType.StaticContent,
+            TextArea =
+$@"Question regex: {questionType.DynamicContentConstraint}
+Answer regex: {questionType.AnswerConstraint}
+Answer description: {questionType.AnswerDescription}
+"
+        })
+        .SepareteIntoRows(3))
     {
         <div class="row">
-            @foreach (var (question, _) in questionRowGroup)
+            @foreach (var (card, _, columnWidth) in questionRow)
             {
-                <div class="col-md-3">
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold mb-2">Static content:</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">@($"{question.StaticContent}")</h6>
-                            <p class="card-text">@($"Question regex: {question.DynamicContentConstraint}")</p>
-                            <p class="card-text">@($"Answer regex: {question.AnswerConstraint}")</p>
-                            <p class="card-text">@($"Answer description: {question.AnswerDescription}")</p>
-                        </div>
-                    </div>
-                </div>
+                <CardBox Width="@columnWidth"
+                         Title="@card.Title"
+                         SubTitle="@card.Subtitle"
+                         TextArea="@card.TextArea"/>
             }
         </div>
     }
@@ -99,8 +102,6 @@
     private UpdateTaskTypeParameters _updateTaskTypeParameters = new();
     private IReadOnlyCollection<QuestionType> _questionTypes = Array.Empty<QuestionType>();
 
-    private Alert _alert = new() { Show = false };
-    
     protected override async Task OnInitializedAsync()
     {
         if (IdString is null)
@@ -139,23 +140,6 @@
         if (updateResult?.Successful is true)
             await ShowAlertAsync(AlertType.Success, "Task type was successfully updated.");
         else
-            await ShowAlertAsync(AlertType.Danger, updateResult?.Message ?? "Something goes wrong. Try again later.");
+            await ShowAlertAsync(AlertType.Danger, updateResult?.Message ?? DefaultErrorMessage);
     }
-
-    private async ValueTask ShowAlertAsync(AlertType alertType, string message)
-    {
-        _alert = _alert with
-        {
-            Show = true,
-            Message = message,
-            Type = alertType
-        };
-        StateHasChanged();
-
-        await Task.Delay(3000);
-
-        _alert = _alert with { Show = false };
-        StateHasChanged();
-    }
-
 }

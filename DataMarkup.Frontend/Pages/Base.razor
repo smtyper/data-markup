@@ -1,0 +1,24 @@
+﻿@using DataMarkup.Frontend.Models
+
+
+@code {
+    protected const string DefaultErrorMessage = "Something goes wrong. Try again later.";
+    
+    protected Alert Alert = new() { Show = false };
+    
+    protected async ValueTask ShowAlertAsync(AlertType alertType, string message, int delayMilliseconds = 5000)
+    {
+        Alert = Alert with
+        {
+            Show = true,
+            Message = message,
+            Type = alertType
+            };
+        StateHasChanged();
+    
+        await Task.Delay(delayMilliseconds);
+    
+        Alert = Alert with { Show = false };
+        StateHasChanged();
+    }
+}
