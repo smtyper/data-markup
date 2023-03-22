@@ -21,7 +21,7 @@
                       Message="@Alert.Message"></AlertMessage>
     }
     
-    <div class="row-mb-4">
+    <div class="row mb-4">
         <div class="col-md-6">
             <EditForm Model="_updateTaskTypeParameters" OnValidSubmit="@UpdateTaskTypeAsync">
                 <DataAnnotationsValidator/>
@@ -60,9 +60,38 @@
                 <div class="mb-3">
                     <button type="submit" class="btn btn-dark">Update</button>
                 </div>
-
             </EditForm>
         </div>
+        
+        @if (_sourceTaskType.AccessType is AccessType.WhiteList)
+        {
+            <div class="col-md-6">
+                <EditForm Model="_addPermissionParameters" OnValidSubmit="AddPermissionAsync">
+                    <DataAnnotationsValidator/>
+                    
+                    <label class="fw-bold">Add permission to user:</label>
+                    <div class="input-group">
+                        <InputText @bind-Value="@_addPermissionParameters.Username" class="form-control mb-2"
+                                   placeholder="Username"/>
+                        <div class="input-group-append">
+                            <button class="input-group-text btn-dark">Add</button>
+                        </div>
+                    </div>
+                </EditForm>
+                
+                <ul class="list-group">
+                    @foreach (var permission in _permissions)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @permission.Username
+                            <button class="input-group-text btn-danger" onclick="@RemovePermissionAsync()">
+                                Remove
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
     </div>
 
     <h3>Questions:</h3>
@@ -72,11 +101,12 @@
         {
             Title = "Static content:",
             Subtitle = questionType.StaticContent,
-            TextArea =
-$@"Question regex: {questionType.DynamicContentConstraint}
-Answer regex: {questionType.AnswerConstraint}
-Answer description: {questionType.AnswerDescription}
-"
+            TextAreas = new []
+            {
+                $"Question regex: {questionType.DynamicContentConstraint}",
+                $"Answer regex: {questionType.AnswerConstraint}",
+                $"Answer description: {questionType.AnswerDescription}"
+            }
         })
         .SepareteIntoRows(3))
     {
@@ -86,11 +116,10 @@ Answer description: {questionType.AnswerDescription}
                 <CardBox Width="@columnWidth"
                          Title="@card.Title"
                          SubTitle="@card.Subtitle"
-                         TextArea="@card.TextArea"/>
+                         TextAreas="@card.TextAreas"/>
             }
         </div>
     }
-
 </div>
 
 @code {
@@ -98,9 +127,12 @@ Answer description: {questionType.AnswerDescription}
     public string? IdString { get; set; }
     
     private Guid _id;
-    private bool _successful;
+    private TaskType _sourceTaskType = new() { AccessType = AccessType.Free };
+
+    private AddPermissionParameters _addPermissionParameters = new();
     private UpdateTaskTypeParameters _updateTaskTypeParameters = new();
     private IReadOnlyCollection<QuestionType> _questionTypes = Array.Empty<QuestionType>();
+    private IReadOnlyCollection<Permission> _permissions = Array.Empty<Permission>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,22 +142,24 @@ Answer description: {questionType.AnswerDescription}
         _id = Guid.Parse(IdString!);
         var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(_id);
 
-        _successful = getTaskTypeResult?.Successful is true;
+        var successful = getTaskTypeResult?.Successful is true;
 
-        var taskType = getTaskTypeResult!.TaskType!;
+        _sourceTaskType = getTaskTypeResult!.TaskType!;
+        _addPermissionParameters = _addPermissionParameters with { Username = string.Empty, TaskTypeId = _id };
 
-        if (_successful)
+        if (successful)
         {
             _updateTaskTypeParameters = new UpdateTaskTypeParameters
             {
                 TaskTypeId = _id,
-                Name = taskType.Name,
-                SolutionsCount = taskType.SolutionsCount,
-                Payment = taskType.Payment,
-                Instruction = taskType.Instruction,
-                AccessType = taskType.AccessType
+                Name = _sourceTaskType.Name,
+                SolutionsCount = _sourceTaskType.SolutionsCount,
+                Payment = _sourceTaskType.Payment,
+                Instruction = _sourceTaskType.Instruction,
+                AccessType = _sourceTaskType.AccessType
             };
-            _questionTypes = taskType.QuestionTypes;
+            _questionTypes = _sourceTaskType.QuestionTypes;
+            _permissions = _sourceTaskType.Permissions;
         }
         else
             NavigationManager.NavigateTo("/NotFound");
@@ -138,8 +172,37 @@ Answer description: {questionType.AnswerDescription}
         var updateResult = await ApiHttpClient.UpdateTaskTypeAsync(_updateTaskTypeParameters);
 
         if (updateResult?.Successful is true)
+        {
             await ShowAlertAsync(AlertType.Success, "Task type was successfully updated.");
+            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
+        }
         else
             await ShowAlertAsync(AlertType.Danger, updateResult?.Message ?? DefaultErrorMessage);
+    }
+
+    private async Task AddPermissionAsync()
+    {
+        var addPermissionResult = await ApiHttpClient.AddPermissionAsync(_addPermissionParameters);
+
+        if (addPermissionResult?.Successful is true)
+        {
+            await ShowAlertAsync(AlertType.Success, "User permission added successfully.");
+            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, addPermissionResult?.Message ?? DefaultErrorMessage);
+    }
+    
+    private async Task RemovePermissionAsync()
+    {
+        var addPermissionResult = await ApiHttpClient.AddPermissionAsync(_addPermissionParameters);
+
+        if (addPermissionResult?.Successful is true)
+        {
+            await ShowAlertAsync(AlertType.Success, "User permission added successfully.");
+            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, addPermissionResult?.Message ?? DefaultErrorMessage);
     }
 }

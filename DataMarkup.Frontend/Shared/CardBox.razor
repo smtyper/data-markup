@@ -3,7 +3,15 @@
         <div class="card-body">
             <h5 class="card-title fw-bold mb-2">@Title</h5>
             <h6 class="card-subtitle mb-2 text-muted">@SubTitle</h6>
-            <p class="card-text">@(TextArea)</p>
+            @foreach (var (text, index) in TextAreas.Select((text, index) => (text, index)))
+            {
+                <p class="card-text">@(text)</p>
+
+                if (index != TextAreas.Count - 1)
+                {
+                    <br/>
+                }
+            }
             @foreach (var button in Buttons)
             {
                 if (button.OnClick is not null)
@@ -37,7 +45,7 @@
     public string SubTitle { get; init; } = null!;
 
     [Parameter]
-    public string TextArea { get; init; } = null!;
+    public IReadOnlyCollection<string> TextAreas { get; init; } = Array.Empty<string>();
 
     [Parameter]
     public IReadOnlyCollection<Button> Buttons { get; init; } = Array.Empty<Button>();

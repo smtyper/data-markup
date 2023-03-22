@@ -101,6 +101,32 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<AddPermissionResult?> AddPermissionAsync(AddPermissionParameters parameters)
+    {
+        const string url = "TaskManager/add-permission";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(parameters) };
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<AddPermissionResult>(jsonContent);
+
+        return result;
+    }
+
+    public async ValueTask<RemovePermissionResult?> RemovePermissionAsync(RemovePermissionParameters parameters)
+    {
+        const string url = "TaskManager/remove-permission";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(parameters) };
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<RemovePermissionResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)

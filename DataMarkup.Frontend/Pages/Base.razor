@@ -13,9 +13,13 @@
             Show = true,
             Message = message,
             Type = alertType
-            };
+        };
         StateHasChanged();
-    
+
+        await OnInitializedAsync();
+        
+        StateHasChanged();
+        
         await Task.Delay(delayMilliseconds);
     
         Alert = Alert with { Show = false };

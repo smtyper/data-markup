@@ -6,7 +6,7 @@ public record Card
 
     public string Subtitle { get; init;} = null!;
 
-    public string TextArea { get; init;} = null!;
+    public IReadOnlyCollection<string> TextAreas { get; init;} = null!;
 
     public string ButtonText { get; init;} = null!;
 }

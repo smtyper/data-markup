@@ -29,33 +29,33 @@ public class TaskManagerController : ControllerBase
 
     [HttpPost]
     [Route("remove-permission")]
-    public async Task<IActionResult> RemovePermission([FromBody] PermissionParameters permissionParameters)
+    public async Task<IActionResult> RemovePermission([FromBody] RemovePermissionParameters removePermissionParameters)
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
-            .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
+            .SingleOrDefaultAsync(type => type.Id == removePermissionParameters.TaskTypeId &&
                                           type.UserId == currentUser.Id);
 
         if (taskType is null)
             return BadRequest(new RemovePermissionResult
             {
                 Successful = false,
-                Message = $"Unable to find task type by the following id '{permissionParameters.TaskTypeId}'"
+                Message = $"Unable to find task type by the following id '{removePermissionParameters.TaskTypeId}'"
             });
 
-        var user = await _userManager.FindByNameAsync(permissionParameters.UserName);
+        var user = await _userManager.FindByNameAsync(removePermissionParameters.Username);
 
         if (user is null)
             return BadRequest(new RemovePermissionResult
             {
                 Successful = false,
-                Message = $"Unable to find user by name '{permissionParameters.UserName}'."
+                Message = $"Unable to find user by name '{removePermissionParameters.Username}'."
             });
 
         var permissionToRemove = await _applicationDbContext.Permissions
             .SingleOrDefaultAsync(permission => permission.UserId == Guid.Parse(user.Id) &&
-                                       permission.TaskTypeId == permissionParameters.TaskTypeId);
+                                       permission.TaskTypeId == removePermissionParameters.TaskTypeId);
 
         if (permissionToRemove is null)
             return BadRequest(new RemovePermissionResult
@@ -72,28 +72,28 @@ public class TaskManagerController : ControllerBase
 
     [HttpPost]
     [Route("add-permission")]
-    public async Task<IActionResult> AddPermission([FromBody] PermissionParameters permissionParameters)
+    public async Task<IActionResult> AddPermission([FromBody] AddPermissionParameters addPermissionParameters)
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
-            .SingleOrDefaultAsync(type => type.Id == permissionParameters.TaskTypeId &&
+            .SingleOrDefaultAsync(type => type.Id == addPermissionParameters.TaskTypeId &&
                                           type.UserId == currentUser.Id);
 
         if (taskType is null)
             return BadRequest(new RemovePermissionResult
             {
                 Successful = false,
-                Message = $"Unable to find task type by the following id '{permissionParameters.TaskTypeId}'"
+                Message = $"Unable to find task type by the following id '{addPermissionParameters.TaskTypeId}'"
             });
 
-        var user = await _userManager.FindByNameAsync(permissionParameters.UserName);
+        var user = await _userManager.FindByNameAsync(addPermissionParameters.Username);
 
         if (user is null)
             return BadRequest(new RemovePermissionResult
             {
                 Successful = false,
-                Message = $"Unable to find user by name '{permissionParameters.UserName}'."
+                Message = $"Unable to find user by name '{addPermissionParameters.Username}'."
             });
 
         var userId = Guid.Parse(user.Id);
@@ -105,7 +105,7 @@ public class TaskManagerController : ControllerBase
                 Message = "User already has permission."
             });
 
-        var persmission = new Permission { TaskTypeId = taskType.Id, UserId = userId };
+        var persmission = new Permission { TaskTypeId = taskType.Id, UserId = userId, Username = user.UserName };
 
         await _applicationDbContext.Permissions.AddAsync(persmission);
         await _applicationDbContext.SaveChangesAsync();

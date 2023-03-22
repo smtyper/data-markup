@@ -25,7 +25,7 @@
         {
             Title = taskType.Name,
             Subtitle = $"payment: {taskType.Payment}, max solutions: {taskType.SolutionsCount}",
-            TextArea = taskType.Instruction.CutIfMoreThan(70),
+            TextAreas = new [] { taskType.Instruction.CutIfMoreThan(70) },
             ButtonText = "To task",
             ButtonHref = $"/TaskManager/task-type/{taskType.Id}"
         })
@@ -33,7 +33,7 @@
         {
             Title = "New task",
             Subtitle = string.Empty,
-            TextArea = "Instruction preview...",
+            TextAreas = new []{ "Instruction preview..." },
             ButtonText = "Create",
             ButtonHref = "/TaskManager/add-task-type"
         })
@@ -45,7 +45,7 @@
                 <CardBox Width="@columnWidth"
                          Title="@card.Title"
                          SubTitle="@card.Subtitle"
-                         TextArea="@card.TextArea"
+                         TextAreas="@card.TextAreas"
                          Buttons="@(new []
                                   {
                                       new CardBox.Button(CardBox.ButtonType.Secondary, card.ButtonText,

@@ -2,10 +2,10 @@
 
 namespace DataMarkup.Entities.Parameters.TaskManager;
 
-public record PermissionParameters
+public class RemovePermissionParameters
 {
     [Required]
-    public string UserName { get; set; } = null!;
+    public string Username { get; set; } = null!;
 
     [Required]
     public Guid? TaskTypeId { get; set; }

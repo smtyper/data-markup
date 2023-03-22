@@ -104,7 +104,7 @@
         {
             Title = question.StaticContent,
             Subtitle = question.DynamicContentConstraint,
-            TextArea = $"{question.AnswerConstraint}: {question.AnswerDescription}".CutIfMoreThan(70),
+            TextAreas = new [] { $"{question.AnswerConstraint}: {question.AnswerDescription}".CutIfMoreThan(70) },
             ButtonText = "Edit"
         })
         .SepareteIntoRows(6))
@@ -115,7 +115,7 @@
                 <CardBox Width="@columnWidth"
                          Title="@card.Title"
                          SubTitle="@card.Subtitle"
-                         TextArea="@card.TextArea"
+                         TextAreas="@card.TextAreas"
                          Buttons="@(new []
                                   {
                                       new CardBox.Button(CardBox.ButtonType.Dark, "Edit", 
