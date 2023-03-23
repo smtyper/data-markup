@@ -74,17 +74,23 @@
                         <InputText @bind-Value="@_addPermissionParameters.Username" class="form-control mb-2"
                                    placeholder="Username"/>
                         <div class="input-group-append">
-                            <button class="input-group-text btn-dark">Add</button>
+                            <button type="submit" class="input-group-text btn-dark">Add</button>
                         </div>
                     </div>
                 </EditForm>
                 
+                @if (_permissions.Any())
+                {
+                    <label class="fw-bold">Current permissions:</label>
+                }
+
                 <ul class="list-group">
                     @foreach (var permission in _permissions)
                     {
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             @permission.Username
-                            <button class="input-group-text btn-danger" onclick="@RemovePermissionAsync()">
+                            <button class="input-group-text btn-danger"
+                                    @onclick="@(async () => await RemovePermissionAsync(permission.Username))">
                                 Remove
                             </button>
                         </li>
@@ -145,7 +151,7 @@
         var successful = getTaskTypeResult?.Successful is true;
 
         _sourceTaskType = getTaskTypeResult!.TaskType!;
-        _addPermissionParameters = _addPermissionParameters with { Username = string.Empty, TaskTypeId = _id };
+        _addPermissionParameters = _addPermissionParameters with { TaskTypeId = _id };
 
         if (successful)
         {
@@ -193,13 +199,14 @@
             await ShowAlertAsync(AlertType.Danger, addPermissionResult?.Message ?? DefaultErrorMessage);
     }
     
-    private async Task RemovePermissionAsync()
+    private async Task RemovePermissionAsync(string username)
     {
-        var addPermissionResult = await ApiHttpClient.AddPermissionAsync(_addPermissionParameters);
+        var removePermissionParameters = new RemovePermissionParameters { Username = username, TaskTypeId = _id };
+        var addPermissionResult = await ApiHttpClient.RemovePermissionAsync(removePermissionParameters);
 
         if (addPermissionResult?.Successful is true)
         {
-            await ShowAlertAsync(AlertType.Success, "User permission added successfully.");
+            await ShowAlertAsync(AlertType.Success, "User permission successfully removed.");
             NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
         }
         else

@@ -2,7 +2,7 @@
 
 namespace DataMarkup.Entities.Parameters.TaskManager;
 
-public class RemovePermissionParameters
+public record RemovePermissionParameters
 {
     [Required]
     public string Username { get; set; } = null!;
