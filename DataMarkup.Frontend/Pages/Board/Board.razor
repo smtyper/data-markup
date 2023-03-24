@@ -2,6 +2,11 @@
 @inherits Base
 @attribute [Authorize]
 
+@using DataMarkup.Entities.Views
+@using DataMarkup.Frontend.Models
+@using Task = System.Threading.Tasks.Task
+
+
 @inject ApiHttpClient ApiHttpClient;
 
 <div class="container-fluid mt-3">
@@ -18,8 +23,61 @@
             <h3 class="float-start">Available tasks:</h3>
         </div>
     </div>
+    
+    @foreach (var taskTypesRow in (_taskTypes.Any() ?
+        _taskTypes
+            .Select(taskType => new TaskTypeCard
+            {
+                Title = taskType.Name,
+                Subtitle = $"payment: {taskType.Payment}",
+                TextAreas = new[] { taskType.Instruction.CutIfMoreThan(70) },
+                ButtonText = "To task",
+                ButtonHref = $"/Board/get-task/{taskType.Id}"
+            }) :
+        new[]
+        {
+            new TaskTypeCard
+            {
+                Title = "Nothing to solve :(",
+                Subtitle = string.Empty,
+                TextAreas = new[] { "Wait for customers to post new tasks or contact them directly." },
+            }
+        })
+        .SepareteIntoRows(4))
+    {
+        <div class="row mb-3">
+            @foreach (var (card, _, columnWidth) in taskTypesRow)
+            {
+                <CardBox Width="@columnWidth"
+                         Title="@card.Title"
+                         SubTitle="@card.Subtitle"
+                         TextAreas="@card.TextAreas"
+                         Buttons="@(new []
+                                  {
+                                      new CardBox.Button(CardBox.ButtonType.Secondary, card.ButtonText,
+                                          Href: card.ButtonHref)
+                                  })"/>
+            }
+        </div>
+    }
 </div>
 
 @code {
+    private IReadOnlyCollection<TaskType> _taskTypes = Array.Empty<TaskType>();
     
+    protected override async Task OnInitializedAsync()
+    {
+        var taskTypesResult = await ApiHttpClient.GetAvailableTaskTypesAsync();
+
+        _taskTypes = taskTypesResult!.Successful ?
+            taskTypesResult.TaskTypes :
+            Array.Empty<TaskType>();
+
+        await base.OnInitializedAsync();
+    }
+    
+    private record TaskTypeCard : Card
+    {
+        public string ButtonHref { get; init; } = null!;
+    }
 }

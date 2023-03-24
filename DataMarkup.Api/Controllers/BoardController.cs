@@ -38,7 +38,8 @@ public class BoardController : ControllerBase
             .Include(type => type.Permissions)
             .Include(type => type.QuestionTypes)
             .Where(type => type.AccessType == AccessType.Free ||
-                           type.Permissions!.Any(permission => permission.UserId == Guid.Parse(currentUser.Id)))
+                           type.Permissions!.Any(permission => permission.UserId == Guid.Parse(currentUser.Id)) ||
+                           type.UserId == currentUser.Id)
             .Select(type => type.Adapt<Entities.Views.TaskType>())
             .ToArrayAsync();
 
@@ -63,7 +64,7 @@ public class BoardController : ControllerBase
         if (taskType is null)
             return BadRequest(new GetTaskResult
             {
-                Successful = true,
+                Successful = false,
                 Message = $"There is no task by folliwing id: {taskTypeId}"
             });
 
@@ -89,7 +90,7 @@ public class BoardController : ControllerBase
             return Ok(new GetTaskResult
             {
                 Successful = true,
-                Message = "There is no tasks by this id to you."
+                Message = "There are no more tasks of this type for you."
             });
 
         var taskInstance = taskInstances.First();
@@ -140,8 +141,21 @@ public class BoardController : ControllerBase
                 Message = $"There is no task instance by the following id: {taskInstanceId}"
             });
 
-        if (taskInstance.TaskType!.AccessType is AccessType.WhiteList &&
-            taskInstance.TaskType.Permissions!.All(persmission => persmission.UserId != currentUserId))
+        var taskType = await _applicationDbContext.TaskTypes
+            .Include(taskType => taskType.Permissions)
+            .Include(taskType => taskType.QuestionTypes)
+            .SingleOrDefaultAsync(taskType => taskType.Id == taskInstance.TaskTypeId);
+
+        if (taskType is null)
+            return BadRequest(new AddSolutionResult
+            {
+                Successful = false,
+                Message = "Unknown task type."
+            });
+
+        if (taskType.AccessType is AccessType.WhiteList &&
+            taskType.Permissions!.All(persmission => persmission.UserId != currentUserId) &&
+            taskType.UserId != currentUserId.ToString())
             return BadRequest(new AddSolutionResult
             {
                 Successful = false,
@@ -155,7 +169,7 @@ public class BoardController : ControllerBase
                 Message = "You have already solved this task."
             });
 
-        if (taskInstance.Solutions!.Count >= taskInstance.TaskType.SolutionsCount)
+        if (taskInstance.Solutions!.Count >= taskType.SolutionsCount)
             return Conflict(new AddSolutionResult
             {
                 Successful = false,
@@ -163,7 +177,7 @@ public class BoardController : ControllerBase
             });
 
         var questionsMap = taskInstance.QuestionInstances!
-            .Join(taskInstance.TaskType.QuestionTypes!,
+            .Join(taskType.QuestionTypes!,
                 instance => instance.QuestionTypeId,
                 type => type.Id,
                 (instance, type) => (type, instance))

@@ -12,7 +12,7 @@
 @inject NavigationManager NavigationManager;
 
 <div class="container-fluid float-left mt-3">
-    
+
     @if (Alert.Show)
     {
         <AlertMessage AlertType="@Alert.TypeString"
@@ -187,17 +187,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (IdString is null)
+        if (Guid.TryParse(IdString, out var id))
+            _id = id;
+        else
             NavigationManager.NavigateTo("/NotFound");
         
         _id = Guid.Parse(IdString!);
         var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(_id);
 
-        var successful = getTaskTypeResult?.Successful is true;
-
         _taskType = getTaskTypeResult!.TaskType!;
 
-        if (successful)
+        if (getTaskTypeResult?.Successful is true)
         {
             _questions = _taskType.QuestionTypes
                 .Select(questionType => (questionType, new QuestionInstanceParameters()))

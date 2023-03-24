@@ -184,8 +184,6 @@
         if (addTaskTypeResult?.Successful is true)
             NavigationManager.NavigateTo("/TaskManager");
         else
-        {
             await ShowAlertAsync(AlertType.Danger, addTaskTypeResult?.Message ?? DefaultErrorMessage);
-        }
     }
 }

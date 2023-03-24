@@ -1,0 +1,121 @@
+﻿@page "/Board/get-task/{IdString}"
+@using DataMarkup.Entities.Parameters.Board
+@using DataMarkup.Entities.Views
+@using DataMarkup.Frontend.Models
+@using Task = System.Threading.Tasks.Task
+@inherits Base
+@attribute [Authorize]
+
+@inject ApiHttpClient ApiHttpClient;
+@inject NavigationManager NavigationManager;
+
+<div class="container-fluid float-left mt-3">
+
+    @if (Alert.Show)
+    {
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
+    }
+
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <h3 class="float-start">Current task:</h3>
+        </div>
+    </div>
+    
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <div class="mb-2 p-2border rounded">
+                <label class="fw-bold">Instruction:</label><br>
+                <p>@_task.Instruction</p>
+            </div>
+            
+            <EditForm Model="_solutionParameters" OnValidSubmit="@AddSolutionAsync">
+                <DataAnnotationsValidator/>
+
+                @foreach (var (answer, question) in _solutionParameters.Answers.Zip(_task.Questions))
+                {
+                    <div class="mb-2 p-2 border rounded">
+                        <label class="fw-bold">Question description:</label>
+                        <p>@question.Description</p>
+
+                        <label class="fw-bold">Content:</label>
+                        <p>@question.Content</p>
+
+                        <InputTextArea @bind-Value="answer.Content" class="form-control mb-2" rows="3"
+                                       placeholder="Your answer"/>
+                        <ValidationMessage For="() => answer.Content"/>
+
+                        <label class="fw-bold">Answer description:</label>>
+                        <p>@question.AnswerDescription</p>
+                    </div>
+                }
+
+                @if (_task.InstanceId != default)
+                {
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-dark">Add answer and go next.</button>
+                    </div>
+                }
+
+            </EditForm>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public string? IdString { get; set; }
+
+    private Guid _id;
+
+    private Entities.Views.Task _task = new() { Questions = Array.Empty<Question>() };
+    private SolutionParameters _solutionParameters = new(){Answers = Array.Empty<AnswerParameters>()};
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse(IdString, out var id))
+            _id = id;
+        else
+            NavigationManager.NavigateTo("/NotFound");
+
+        var getTaskResult = await ApiHttpClient.GetTaskAsync(_id);
+
+        if (getTaskResult?.Successful is true)
+        {
+            _task = getTaskResult.Task ?? _task;
+            _solutionParameters = new SolutionParameters
+            {
+                TaskInstanceId = _task.InstanceId,
+                Answers = _task.Questions
+                    .Select(question => new AnswerParameters
+                    {
+                        QuestionInstanceId = question.InstanceId
+                    })
+                    .ToArray()
+            };
+
+            if (getTaskResult.Message is not null)
+            {
+                await ShowAlertAsync(AlertType.Success, getTaskResult.Message);
+                NavigationManager.NavigateTo("/");
+            }
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, getTaskResult?.Message ?? DefaultErrorMessage);
+    }
+
+    private async Task AddSolutionAsync()
+    {
+        var addSolutionResult = await ApiHttpClient.AddSolutionAsync(_solutionParameters);
+
+        if (addSolutionResult?.Successful is true)
+        {
+            NavigationManager.NavigateTo($"/Board/get-task/{_id}", forceLoad: true);
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, addSolutionResult?.Message ?? DefaultErrorMessage);
+    }
+}

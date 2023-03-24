@@ -61,7 +61,7 @@
 </div>
 
 @code {
-    private IReadOnlyCollection<TaskType> _taskTypes = ArraySegment<TaskType>.Empty;
+    private IReadOnlyCollection<TaskType> _taskTypes = Array.Empty<TaskType>();
 
     protected override async Task OnInitializedAsync()
     {

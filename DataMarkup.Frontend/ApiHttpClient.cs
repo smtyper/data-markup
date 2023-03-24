@@ -3,8 +3,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Blazored.LocalStorage;
 using DataMarkup.Entities.Parameters.Account;
+using DataMarkup.Entities.Parameters.Board;
 using DataMarkup.Entities.Parameters.TaskManager;
 using DataMarkup.Entities.Views.Account;
+using DataMarkup.Entities.Views.Board;
 using DataMarkup.Entities.Views.TaskManager;
 using DataMarkup.Frontend.Models;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -153,6 +155,45 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<GetAvailableTaskTypesResult?> GetAvailableTaskTypesAsync()
+    {
+        const string url = "Board/get-available-task-types";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<GetAvailableTaskTypesResult>(jsonContent);
+
+        return result;
+    }
+
+    public async ValueTask<GetTaskResult?> GetTaskAsync(Guid taskTypeId)
+    {
+        var url = $"Board/get-task/?taskTypeId={taskTypeId}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<GetTaskResult>(jsonContent);
+
+        return result;
+    }
+
+    public async ValueTask<AddSolutionResult?> AddSolutionAsync(SolutionParameters parameters)
+    {
+        const string url = "Board/add-solution";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(parameters) };
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<AddSolutionResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)
@@ -185,7 +226,7 @@ public class ApiHttpClient
 
         var token = DateTime.UtcNow.AddSeconds(45) > userSession.TokenExpiration ?
             await GetUpdatedToken(userSession) :
-            userSession!.Token;
+            userSession.Token;
 
         requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
