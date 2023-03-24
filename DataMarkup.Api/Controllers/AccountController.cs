@@ -129,7 +129,7 @@ public class AccountController : ControllerBase
 
         if (existedToken is not null)
         {
-            if (existedToken.Expiration < DateTime.UtcNow)
+            if (existedToken.Expiration > DateTime.UtcNow)
                 return existedToken;
 
             _applicationDbContext.RefreshTokens.Remove(existedToken);

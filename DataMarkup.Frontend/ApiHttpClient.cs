@@ -157,7 +157,7 @@ public class ApiHttpClient
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)
         {
-            if (DateTime.UtcNow.AddSeconds(-45) > userSession.RefreshTokenExpiration)
+            if (DateTime.UtcNow.AddSeconds(45) > userSession.RefreshTokenExpiration)
             {
                 await _applicationAuthenticationStateProvider.UpdateAuthenticationStateAsync(null);
 
@@ -183,7 +183,7 @@ public class ApiHttpClient
         var userSession = await _localStorageService.GetBase64ValueAsync<UserSession>(nameof(UserSession)) ??
                           throw new UnauthorizedAccessException();
 
-        var token = DateTime.UtcNow.AddSeconds(-45) > userSession?.TokenExpiration ?
+        var token = DateTime.UtcNow.AddSeconds(45) > userSession.TokenExpiration ?
             await GetUpdatedToken(userSession) :
             userSession!.Token;
 
