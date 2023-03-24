@@ -1,11 +1,61 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Blazored.LocalStorage;
+using ChartJs.Blazor.Common;
+using ChartJs.Blazor.PieChart;
 
 namespace DataMarkup.Frontend;
 
 public static class Extensions
 {
+    public static PieConfig GetPieConfig<T>(IEnumerable<T> datasetValues, string? title = null,
+        IEnumerable<string>? labels = null, IndexableOption<string>? colors = null)
+    {
+        var pieConfig = new PieConfig
+        {
+            Options = new PieOptions
+            {
+                Responsive = true,
+                Title = title is null ?
+                    null :
+                    new OptionsTitle
+                    {
+                        Display = true,
+                        Text = title
+                    },
+            }
+        };
+
+        foreach (var label in labels ?? Enumerable.Empty<string>())
+            pieConfig.Data.Labels.Add(label);
+
+        var dataset = new PieDataset<T>(datasetValues)
+        {
+            BackgroundColor = colors
+        };
+
+        pieConfig.Data.Datasets.Add(dataset);
+
+        return pieConfig;
+    }
+
+    public static IndexableOption<string> GetBluePieColors() => new []
+    {
+        "#33567f",
+        "#3a6190",
+        "#416c9f",
+        "#4774ab",
+        "#4c7db7",
+        "#668dc2",
+        "#8aa3cc",
+        "#a3b5d4",
+        "#b9c6dd",
+        "#ccd5e6",
+    };
+
+    public static IReadOnlyList<T> AsReadOnlyList<T>(this IReadOnlyCollection<T> collection) =>
+        (IReadOnlyList<T>)collection;
+
     public static IEnumerable<IEnumerable<(T Value, int Index, int ColumnWidth)>> SepareteIntoRows<T>(
         this IEnumerable<T> items, int itemsInRow) => items
         .Select((item, index) => (item, index))

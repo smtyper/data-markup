@@ -127,6 +127,32 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<AddTaskInstancesResult?> AddTaskInstancesAsync(TaskInstancesParameters parameters)
+    {
+        const string url = "TaskManager/add-task-instances";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(parameters) };
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<AddTaskInstancesResult>(jsonContent);
+
+        return result;
+    }
+
+    public async ValueTask<GetTaskInstancesResult?> GetTaskInstancesAsync(Guid typeId, int page, int pageSize)
+    {
+        var url = $"TaskManager/instances/{typeId}&{page}&{pageSize}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<GetTaskInstancesResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)

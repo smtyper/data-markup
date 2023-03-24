@@ -1,0 +1,273 @@
+﻿@page "/TaskManager/instances/{IdString}/{Page:int}"
+@inherits Base
+@attribute [Authorize]
+
+@using DataMarkup.Entities.Views
+@using Task = System.Threading.Tasks.Task
+@using DataMarkup.Entities
+@using DataMarkup.Entities.Parameters.TaskManager
+@using DataMarkup.Frontend.Models
+
+@inject ApiHttpClient ApiHttpClient;
+@inject NavigationManager NavigationManager;
+
+<div class="container-fluid float-left mt-3">
+    
+    @if (Alert.Show)
+    {
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
+    }
+
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <h3 class="float-start">Add task:</h3>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-4 float-end">
+                <h3 class="float-start">Current tasks:</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-1">
+            <EditForm Model="_taskInstancesParameters" OnValidSubmit="AddTaskInstancesAsync">
+                <DataAnnotationsValidator/>
+
+                @foreach (var (type, instance) in _questions)
+                {
+                    <div class="row mb-2">
+                        <div class="p-3 border rounded">
+                            <h5 class="card-title fw-bold mb-2">@type.StaticContent</h5>
+                            <label class="fw-bold">Question constraint:</label>
+                            <p class="card-text">@type.DynamicContentConstraint</p>
+                            <InputTextArea @bind-Value="instance.Content" class="form-control mb-1" rows="3"
+                                           placeholder="Question content"/>
+                            <ValidationMessage For="() => instance.Content"/>
+                            <InputTextArea @bind-Value="instance.ImageSource" class="form-control" rows="2"
+                                           placeholder="Image source or base64 content">
+                            </InputTextArea>
+                            <ValidationMessage For="() => instance.ImageSource"/>
+                        </div>
+                    </div>
+                }
+
+                <div>
+                    <button type="submit" class="btn btn-dark mb-2">Add instance</button>
+                </div>
+            </EditForm>
+        </div>
+
+        <div class="col-md-6 mb-1">
+            
+            <p class="fw-bold float-end">
+                @_fullySolvedTaskCount / @_totalTaskCount, @(_fullySolvedTaskCount / (decimal)(_totalTaskCount is 0 ? 1 : _totalTaskCount))%
+            </p>
+            
+            <div class="d-flex justify-content-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        @foreach (var pageIndex in Enumerable.Range(1, _totalPageCount))
+                        {
+                            <li class="page-item @(pageIndex == Page ? "active" : string.Empty)">
+                                <a class="page-link" @onclick="() => ReloadWithPage(pageIndex)">
+                                    @pageIndex
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+
+
+            <ul class="list-group">
+                @foreach (var element in _currentTasks)
+                {
+                    <li class="list-group-item mb-2">
+                        <div class="btn btn-light float-start" @onclick="() => element.ChangeVisibility()">
+                            @element.Statistic.Id
+                        </div>
+                        <div class="float-end">
+                            @(element.Statistic.Solutions.Count) / @(_taskType.SolutionsCount)
+                        </div>
+                    </li>
+
+                    if (element.IsVisible)
+                    {
+                        @foreach (var (question, answersEnumerable) in element.Statistic.QuestionContents
+                            .GroupJoin(element.Statistic.Solutions
+                                .SelectMany(solution => solution.Answers
+                                    .Select(answer => (answer, solution.Username))),
+                                question => question.Id,
+                                answerItem => answerItem.answer.QuestionId,
+                                (question, answerItems) => (question, answerItems)))
+                        {
+                            var answers = answersEnumerable.ToArray();
+
+                            <div class="row mx-1 mb-2 border rounded">
+                                <div class="col-md-12 p-3">
+                                    <label class="fw-bold">Content:</label><br>
+                                    <p>@question.Content</p>
+                                </div>
+                                <div class="col-md-6 p-3">
+                                    <ul class="list-group">
+                                        <label class="fw-bold">Answers:</label><br>
+                                        @foreach (var answer in answers)
+                                        {
+                                            <li class="list-group-item">
+                                                <label class="fw-bold">User:</label><br>
+                                                <p>@answer.Username</p><br>
+
+                                                <label class="fw-bold">Content:</label><br>
+                                                <p>@answer.answer.Content</p><br>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 p-3">
+                                    @{
+                                        var answersGroups = answers.Any() ?
+                                            answers
+                                                .GroupBy(answer => answer.answer.Content)
+                                                .OrderBy(group => group.Count())
+                                                .Select(group =>
+                                                    (Title: group.Key.CutIfMoreThan(15),
+                                                        Content: group.Key,
+                                                        Percent: group.Count() / (decimal)answers.Length))
+                                                .ToArray() :
+                                            new[] { (Title: "No aswers", Content: "-", Percent: 1M) };
+                                        var mostRelevantAnswer = answersGroups.First();
+
+                                        var pieConfig = Extensions.GetPieConfig(
+                                            datasetValues: answersGroups.Select(group => group.Percent),
+                                            title: "Answer statistic:",
+                                            labels: answersGroups.Select(group => group.Title),
+                                            colors: Extensions.GetBluePieColors());
+
+                                        <div class="mb-2">
+                                            <Chart Config="pieConfig"></Chart>
+                                        </div>
+
+                                        <label class="fw-bold">Most relevant answer:</label><br>
+                                        <p>@mostRelevantAnswer.Content</p><br>
+                                    }
+
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? IdString { get; set; }
+
+    [Parameter]
+    public int Page { get; set; } = 1;
+    
+    private Guid _id;
+    private int _totalPageCount = 1;
+    private int _totalTaskCount = 0;
+    private int _fullySolvedTaskCount = 0;
+    private const int PageSize = 100;
+
+    private TaskType _taskType = new() { AccessType = AccessType.Free };
+    private IReadOnlyCollection<TaskElement> _currentTasks = Array.Empty<TaskElement>();
+
+    private TaskInstancesParameters _taskInstancesParameters = new();
+    private IReadOnlyCollection<(QuestionType Type, QuestionInstanceParameters Instance)> _questions =
+        Array.Empty<(QuestionType Type, QuestionInstanceParameters Instance)>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IdString is null)
+            NavigationManager.NavigateTo("/NotFound");
+        
+        _id = Guid.Parse(IdString!);
+        var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(_id);
+
+        var successful = getTaskTypeResult?.Successful is true;
+
+        _taskType = getTaskTypeResult!.TaskType!;
+
+        if (successful)
+        {
+            _questions = _taskType.QuestionTypes
+                .Select(questionType => (questionType, new QuestionInstanceParameters()))
+                .ToArray();
+            
+            _taskInstancesParameters = _taskInstancesParameters with
+            {
+                TaskTypeId = _id,
+                QuestionDictionary = _questions
+                    .ToDictionary(item => item.Type.Id, item => new[] { item.Instance }.AsReadOnlyList())
+            };
+            
+            await LoadTasksAsync();
+        }
+        else
+            NavigationManager.NavigateTo("/NotFound");
+        
+        await base.OnInitializedAsync();
+    }
+
+    private async Task AddTaskInstancesAsync()
+    {
+        var addTaskInstancesResult = await ApiHttpClient.AddTaskInstancesAsync(_taskInstancesParameters);
+
+        if (addTaskInstancesResult?.Successful is true)
+        {
+            await ShowAlertAsync(AlertType.Success, "Task instance added successfully.");
+            NavigationManager.NavigateTo($"/TaskManager/instances/{IdString}&{Page}");
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, addTaskInstancesResult?.Message ?? DefaultErrorMessage);
+    }
+
+    private async ValueTask LoadTasksAsync()
+    {
+        var getTaskInstancesResult = await ApiHttpClient.GetTaskInstancesAsync(_id, Page, PageSize);
+
+        if (getTaskInstancesResult?.Successful is true)
+        {
+            _currentTasks = getTaskInstancesResult.TaskStatistics
+                .Select(statistic => new TaskElement
+                {
+                    Statistic = statistic,
+                    IsVisible = false
+                })
+                .ToArray();
+            _totalPageCount = getTaskInstancesResult.TotalPageCount;
+            _totalTaskCount = getTaskInstancesResult.TotalCount;
+            _fullySolvedTaskCount = getTaskInstancesResult.FullySolvedTasksCont;
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, getTaskInstancesResult?.Message ?? DefaultErrorMessage);
+
+        StateHasChanged();
+    }
+
+    private void ReloadWithPage(int page)
+    {
+        NavigationManager.NavigateTo($"/TaskManager/instances/{IdString}/{page}", forceLoad: true);
+    }
+
+    private record TaskElement
+    {
+        public TaskStatistic Statistic { get; init; } = null!;
+        
+        public bool IsVisible { get; set; }
+        
+        public void ChangeVisibility()
+        {
+            IsVisible = !IsVisible;
+        }
+    }
+}

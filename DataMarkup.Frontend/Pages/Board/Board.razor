@@ -1,0 +1,25 @@
+﻿@page "/Board"
+@inherits Base
+@attribute [Authorize]
+
+@inject ApiHttpClient ApiHttpClient;
+
+<div class="container-fluid mt-3">
+
+    @if (Alert.Show)
+    {
+        <AlertMessage AlertType="@Alert.TypeString"
+                      Title="@Alert.Title"
+                      Message="@Alert.Message"></AlertMessage>
+    }
+
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <h3 class="float-start">Available tasks:</h3>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+}

@@ -12,14 +12,26 @@
 @inject NavigationManager NavigationManager;
 
 <div class="container-fluid float-left mt-3">
-    <h3>Task type:</h3>
-    
     @if (Alert.Show)
     {
         <AlertMessage AlertType="@Alert.TypeString"
                       Title="@Alert.Title"
                       Message="@Alert.Message"></AlertMessage>
     }
+    
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <h3 class="float-start">Task type:</h3>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="mb-4 float-end">
+                <a class="btn btn-dark" href="/TaskManager/instances/@IdString/1">
+                    To instances
+                </a>
+            </div>
+        </div>
+    </div>
     
     <div class="row mb-4">
         <div class="col-md-6">
@@ -63,12 +75,12 @@
             </EditForm>
         </div>
         
-        @if (_sourceTaskType.AccessType is AccessType.WhiteList)
-        {
-            <div class="col-md-6">
+        <div class="col-md-6">
+            @if (_sourceTaskType.AccessType is AccessType.WhiteList)
+            {
                 <EditForm Model="_addPermissionParameters" OnValidSubmit="AddPermissionAsync">
                     <DataAnnotationsValidator/>
-                    
+
                     <label class="fw-bold">Add permission to user:</label>
                     <div class="input-group">
                         <InputText @bind-Value="@_addPermissionParameters.Username" class="form-control mb-2"
@@ -78,7 +90,7 @@
                         </div>
                     </div>
                 </EditForm>
-                
+
                 @if (_permissions.Any())
                 {
                     <label class="fw-bold">Current permissions:</label>
@@ -96,8 +108,8 @@
                         </li>
                     }
                 </ul>
-            </div>
-        }
+            }
+        </div>
     </div>
 
     <h3>Questions:</h3>

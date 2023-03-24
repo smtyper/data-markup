@@ -12,7 +12,7 @@ public record Solution
 
     public Guid UserId { get; init; }
 
-    public User? User { get; init; }
+    public User? User { get; set; }
 
     public IReadOnlyCollection<Answer>? Answers { get; init; } = null!;
 }

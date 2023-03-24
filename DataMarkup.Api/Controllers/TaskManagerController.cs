@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using DataMarkup.Api.DbContexts;
 using DataMarkup.Api.Models.Database.Access;
 using DataMarkup.Api.Models.Database.Account;
@@ -138,7 +139,6 @@ public class TaskManagerController : ControllerBase
         var taskTypeRaw = await _applicationDbContext.TaskTypes
             .Include(type => type.QuestionTypes)
             .Include(type => type.Permissions)
-            .Include(type => type.TaskInstances)
             .Where(type => type.UserId == currentUser.Id && type.Id == id)
             .Select(type => type)
             .SingleOrDefaultAsync();
@@ -153,6 +153,92 @@ public class TaskManagerController : ControllerBase
         var taskType = taskTypeRaw.Adapt<Entities.Views.TaskType>();
 
         return Ok(new GetTaskTypeResult { Successful = true, TaskType = taskType });
+    }
+
+    [HttpGet("instances/{typeId:guid}&{page:int}&{pageSize:int}")]
+    public async Task<IActionResult> GetTaskInstances(Guid typeId,
+        [Range(1, int.MaxValue)] int page = 1, [Range(1, 1000)] int pageSize = 100)
+    {
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
+
+        var taskType = await _applicationDbContext.TaskTypes
+            .SingleOrDefaultAsync(type => type.UserId == currentUser.Id && type.Id == typeId);
+        var rawInstancesQuery = _applicationDbContext.TaskTypes
+            .Include(type => type.TaskInstances)!
+            .ThenInclude(instance => instance.Solutions)!
+            .ThenInclude(solution => solution.Answers)
+            .Where(type => type.UserId == currentUser.Id && type.Id == typeId)
+            .SelectMany(type => type.TaskInstances!);
+
+        if (taskType is null)
+            return BadRequest(new GetTaskInstancesResult
+            {
+                Successful = false,
+                Message = "Unable to find task type by id."
+            });
+
+        var totalCount = await rawInstancesQuery.CountAsync();
+        var fullySolvedTasksCont = await _applicationDbContext.TaskInstances
+            .Join(_applicationDbContext.Solutions,
+                instance => instance.Id,
+                solution => solution.TaskInstanceId,
+                (instance, solution) => new { instance, solution })
+            .Where(item => item.instance.TaskTypeId == typeId)
+            .GroupBy(item => item.instance.Id)
+            .CountAsync(group => group.Count() == taskType.SolutionsCount);
+
+        var rawInstances = await rawInstancesQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+        var totalPageCount = (totalCount / pageSize) + (totalCount % pageSize is 0 ? 0 : 1);
+
+        foreach (var taskInstance in rawInstances)
+            taskInstance.QuestionInstances = await _applicationDbContext.QuestionInstances
+                .Where(question => question.TaskInstanceId == taskInstance.Id)
+                .ToArrayAsync();
+
+        foreach (var solution in rawInstances.SelectMany(instance => instance.Solutions!))
+            solution.User = await _applicationDbContext.Users
+                .SingleAsync(user => user.Id == solution.UserId.ToString());
+
+        var taskStatistics = rawInstances
+            .Select(instance => new Entities.Views.TaskStatistic
+            {
+                Id = instance.Id,
+                Solutions = instance.Solutions!
+                    .Select(solution => new Entities.Views.Solution
+                    {
+                        Id = solution.Id,
+                        Username = solution.User!.UserName,
+                        Answers = solution.Answers!
+                            .Select(answer => new Entities.Views.Answer
+                            {
+                                QuestionId = answer.QuestionInstanceId,
+                                Content = answer.Content
+                            })
+                            .ToArray()
+                    })
+                    .ToArray(),
+                QuestionContents = instance.QuestionInstances!
+                    .Select(question => new Entities.Views.QuestionContent
+                    {
+                        Id = question.Id,
+                        Content = question.Content
+                    })
+                    .ToArray()
+            })
+            .ToArray();
+
+        return Ok(new GetTaskInstancesResult
+        {
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPageCount = totalPageCount,
+            FullySolvedTasksCont = fullySolvedTasksCont,
+            Successful = true, TaskStatistics = taskStatistics
+        });
     }
 
     [HttpPost]

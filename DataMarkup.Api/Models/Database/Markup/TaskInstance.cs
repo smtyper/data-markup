@@ -8,7 +8,7 @@ public record TaskInstance
 
     public TaskType? TaskType { get; init; }
 
-    public IReadOnlyCollection<QuestionInstance>? QuestionInstances { get; init; }
+    public IReadOnlyCollection<QuestionInstance>? QuestionInstances { get; set; }
 
     public IReadOnlyCollection<Solution>? Solutions { get; init; }
 }
