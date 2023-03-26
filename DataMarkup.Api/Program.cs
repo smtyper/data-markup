@@ -78,6 +78,7 @@ WebApplicationBuilder CreateWebApplicationBuilder()
         {
             corsPolicyBuilder.AllowAnyOrigin();
             corsPolicyBuilder.AllowAnyHeader();
+            corsPolicyBuilder.AllowAnyMethod();
         }));
 
     builder.Services.AddControllers();

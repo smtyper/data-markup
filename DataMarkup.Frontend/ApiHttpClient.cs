@@ -194,6 +194,19 @@ public class ApiHttpClient
         return result;
     }
 
+    public async ValueTask<RemoveTaskInstanceResult?> RemoveTaskInstanceAsync(Guid instanceId)
+    {
+        var url = $"TaskManager/remove-task-instance/{instanceId}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        using var response = await SendWithAuthorizationHeaderAsync(request);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var result = TryDeserialize<RemoveTaskInstanceResult>(jsonContent);
+
+        return result;
+    }
+
     private async ValueTask<HttpResponseMessage> SendWithAuthorizationHeaderAsync(HttpRequestMessage requestMessage)
     {
         async ValueTask<string?> GetUpdatedToken(UserSession userSession)

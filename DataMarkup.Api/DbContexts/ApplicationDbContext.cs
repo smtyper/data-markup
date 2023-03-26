@@ -22,8 +22,6 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
     public DbSet<Solution> Solutions { get; init; } = null!;
 
-    public DbSet<Answer> Answers { get; init; } = null!;
-
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
@@ -75,7 +73,6 @@ public class ApplicationDbContext : IdentityDbContext<User>
             .HasOne(solution => solution.User)
             .WithMany(user => user.Solutions)
             .OnDelete(DeleteBehavior.NoAction);
-
         builder.Entity<Solution>()
             .HasMany(solution => solution.Answers)
             .WithOne(answer => answer.Solution)

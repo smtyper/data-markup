@@ -421,7 +421,7 @@ public class TaskManagerController : ControllerBase
     }
 
     [HttpDelete]
-    [Route("remove-task-instances")]
+    [Route("remove-task-instance/{instanceId:guid}")]
     public async Task<IActionResult> RemoveTaskInstance(Guid instanceId)
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
@@ -442,14 +442,14 @@ public class TaskManagerController : ControllerBase
                 Message = "Unable to find your task instance by id."
             });
 
-        var answers = instance.Solutions!.SelectMany(solution => solution.Answers!).ToArray();
+        var answers = instance.Solutions!.SelectMany(solution => solution.Answers!).OfType<object>().ToArray();
 
         if (answers.Any())
-            _applicationDbContext.Answers.RemoveRange(answers);
+            _applicationDbContext.RemoveRange(answers);
 
         _applicationDbContext.Solutions.RemoveRange(instance.Solutions!);
         _applicationDbContext.QuestionInstances.RemoveRange(instance.QuestionInstances!);
-        _applicationDbContext.Answers.RemoveRange(answers);
+        _applicationDbContext.TaskInstances.Remove(instance);
 
         await _applicationDbContext.SaveChangesAsync();
 

@@ -91,7 +91,13 @@
                             @task.Id
                         </div>
                         <div class="float-end">
-                            @(task.SolutionCount) / @(_taskType.SolutionsCount)
+                            <div>
+                                @(task.SolutionCount) / @(_taskType.SolutionsCount)
+                            </div>
+                            <button class="btn default"
+                                    @onclick="async () => await RemoveTaskInstanceAsync(element.Task.Id)">
+                                🗙
+                            </button>
                         </div>
                     </li>
 
@@ -231,11 +237,24 @@
 
         if (addTaskInstancesResult?.Successful is true)
         {
-            await ShowAlertAsync(AlertType.Success, "Task instance added successfully.");
             await LoadTasksAsync();
+            await ShowAlertAsync(AlertType.Success, "Task instance added successfully.");
         }
         else
             await ShowAlertAsync(AlertType.Danger, addTaskInstancesResult?.Message ?? DefaultErrorMessage);
+    }
+
+    private async Task RemoveTaskInstanceAsync(Guid instanceId)
+    {
+        var removeTaskInstanceResult = await ApiHttpClient.RemoveTaskInstanceAsync(instanceId);
+
+        if (removeTaskInstanceResult?.Successful is true)
+        {
+            await LoadTasksAsync();
+            await ShowAlertAsync(AlertType.Success, "Task instance removed successfully.");
+        }
+        else
+            await ShowAlertAsync(AlertType.Danger, removeTaskInstanceResult?.Message ?? DefaultErrorMessage);
     }
 
     private async ValueTask LoadTasksAsync()
