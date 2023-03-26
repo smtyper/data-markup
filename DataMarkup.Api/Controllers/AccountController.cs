@@ -1,6 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using DataMarkup.Api.DbContexts;
 using DataMarkup.Api.Models.Database.Account;
@@ -101,7 +100,7 @@ public class AccountController : ControllerBase
             return BadRequest(new RefreshTokenResult { Successful = false, Message = "Invalid token." });
 
         var refreshToken = await _applicationDbContext.RefreshTokens
-            .SingleOrDefaultAsync(token => token.UserId == Guid.Parse(user.Id) &&
+            .SingleOrDefaultAsync(token => token.UserId == user.Id &&
                                            token.Token == parameters.RefreshToken);
 
         if (refreshToken is null)
@@ -122,10 +121,8 @@ public class AccountController : ControllerBase
 
     private async ValueTask<RefreshToken> GetRefreshToken(IdentityUser user)
     {
-        var userId = Guid.Parse(user.Id);
-
         var existedToken = _applicationDbContext.RefreshTokens
-            .SingleOrDefault(token => token.UserId == userId);
+            .SingleOrDefault(token => token.UserId == user.Id);
 
         if (existedToken is not null)
         {
@@ -140,7 +137,7 @@ public class AccountController : ControllerBase
         var refreshToken = new RefreshToken
         {
             Token = new JwtSecurityTokenHandler().WriteToken(refreshJwtToken),
-            UserId = userId,
+            UserId = user.Id,
             Expiration = refreshJwtToken.ValidTo
         };
 

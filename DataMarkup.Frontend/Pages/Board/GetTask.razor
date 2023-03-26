@@ -1,10 +1,11 @@
 ﻿@page "/Board/get-task/{IdString}"
+@inherits Base
+@attribute [Authorize]
+
 @using DataMarkup.Entities.Parameters.Board
 @using DataMarkup.Entities.Views
 @using DataMarkup.Frontend.Models
 @using Task = System.Threading.Tasks.Task
-@inherits Base
-@attribute [Authorize]
 
 @inject ApiHttpClient ApiHttpClient;
 @inject NavigationManager NavigationManager;
@@ -25,40 +26,67 @@
     </div>
     
     <div class="row mb-2">
-        <div class="col-md-6">
-            <div class="mb-2 p-2border rounded">
+        <div class="col-md-12">
+            <div class="mb-2 p-2">
                 <label class="fw-bold">Instruction:</label><br>
-                <p>@_task.Instruction</p>
+                <p>@_solverTask.Instruction</p>
+            </div>
+            
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    
+                </div>
+
             </div>
             
             <EditForm Model="_solutionParameters" OnValidSubmit="@AddSolutionAsync">
                 <DataAnnotationsValidator/>
 
-                @foreach (var (answer, question) in _solutionParameters.Answers.Zip(_task.Questions))
+                @foreach (var (answer, question) in _solutionParameters.Answers.Zip(_solverTask.Questions))
                 {
-                    <div class="mb-2 p-2 border rounded">
-                        <label class="fw-bold">Question description:</label>
-                        <p>@question.Description</p>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <div class="mb-2 p-2 border rounded">
+                                <label class="fw-bold">Question description:</label>
+                                <p>@question.Description</p>
 
-                        <label class="fw-bold">Content:</label>
-                        <p>@question.Content</p>
+                                <label class="fw-bold">Content:</label>
+                                <p>@question.Content</p>
 
-                        <InputTextArea @bind-Value="answer.Content" class="form-control mb-2" rows="3"
-                                       placeholder="Your answer"/>
-                        <ValidationMessage For="() => answer.Content"/>
+                                <InputTextArea @bind-Value="answer.Content" class="form-control mb-2" rows="3"
+                                               placeholder="Your answer"/>
+                                <ValidationMessage For="() => answer.Content"/>
 
-                        <label class="fw-bold">Answer description:</label>>
-                        <p>@question.AnswerDescription</p>
+                                <label class="fw-bold">Answer description:</label>>
+                                <p>@question.AnswerDescription</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2 p-2 border rounded">
+
+                                @if (question.ImageContent is null)
+                                {
+                                    <h2 class="d-flex justify-content-center text-muted">
+                                        No image content to show.
+                                    </h2>
+                                }
+                                else
+                                {
+                                    <img src="@question.ImageContent" alt="Unable to show image" class="img-fluid">
+                                }
+
+                            </div>
+                        </div>
                     </div>
+
                 }
 
-                @if (_task.InstanceId != default)
+                @if (_solverTask.InstanceId != default)
                 {
                     <div class="mb-3">
                         <button type="submit" class="btn btn-dark">Add answer and go next.</button>
                     </div>
                 }
-
             </EditForm>
         </div>
     </div>
@@ -71,7 +99,7 @@
 
     private Guid _id;
 
-    private Entities.Views.Task _task = new() { Questions = Array.Empty<Question>() };
+    private Entities.Views.SolverTask _solverTask = new() { Questions = Array.Empty<SolverQuestion>() };
     private SolutionParameters _solutionParameters = new(){Answers = Array.Empty<AnswerParameters>()};
 
     protected override async Task OnInitializedAsync()
@@ -85,26 +113,22 @@
 
         if (getTaskResult?.Successful is true)
         {
-            _task = getTaskResult.Task ?? _task;
+            _solverTask = getTaskResult.Task ?? _solverTask;
             _solutionParameters = new SolutionParameters
             {
-                TaskInstanceId = _task.InstanceId,
-                Answers = _task.Questions
+                TaskInstanceId = _solverTask.InstanceId,
+                Answers = _solverTask.Questions
                     .Select(question => new AnswerParameters
                     {
                         QuestionInstanceId = question.InstanceId
                     })
                     .ToArray()
             };
-
-            if (getTaskResult.Message is not null)
-            {
-                await ShowAlertAsync(AlertType.Success, getTaskResult.Message);
-                NavigationManager.NavigateTo("/");
-            }
         }
         else
             await ShowAlertAsync(AlertType.Danger, getTaskResult?.Message ?? DefaultErrorMessage);
+
+        await base.OnInitializedAsync();
     }
 
     private async Task AddSolutionAsync()

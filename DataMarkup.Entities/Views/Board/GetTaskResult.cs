@@ -2,5 +2,5 @@
 
 public record GetTaskResult : RequestResult
 {
-    public Task? Task { get; init; }
+    public SolverTask? Task { get; init; }
 }

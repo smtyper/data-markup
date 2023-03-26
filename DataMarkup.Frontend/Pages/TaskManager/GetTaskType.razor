@@ -26,7 +26,7 @@
         
         <div class="col-md-6">
             <div class="mb-4 float-end">
-                <a class="btn btn-dark" href="/TaskManager/instances/@IdString/1">
+                <a class="btn btn-dark" href="/TaskManager/instances/@IdString">
                     To instances
                 </a>
             </div>
@@ -191,8 +191,8 @@
 
         if (updateResult?.Successful is true)
         {
+            await OnInitializedAsync();
             await ShowAlertAsync(AlertType.Success, "Task type was successfully updated.");
-            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
         }
         else
             await ShowAlertAsync(AlertType.Danger, updateResult?.Message ?? DefaultErrorMessage);
@@ -204,8 +204,8 @@
 
         if (addPermissionResult?.Successful is true)
         {
+            await OnInitializedAsync();
             await ShowAlertAsync(AlertType.Success, "User permission added successfully.");
-            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
         }
         else
             await ShowAlertAsync(AlertType.Danger, addPermissionResult?.Message ?? DefaultErrorMessage);
@@ -218,8 +218,8 @@
 
         if (addPermissionResult?.Successful is true)
         {
+            await OnInitializedAsync();
             await ShowAlertAsync(AlertType.Success, "User permission successfully removed.");
-            NavigationManager.NavigateTo($"/TaskManager/task-type/{IdString}");
         }
         else
             await ShowAlertAsync(AlertType.Danger, addPermissionResult?.Message ?? DefaultErrorMessage);

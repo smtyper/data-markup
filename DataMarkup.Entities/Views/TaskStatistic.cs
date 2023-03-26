@@ -1,33 +1,43 @@
 ﻿namespace DataMarkup.Entities.Views;
 
-public record TaskStatistic
+public record Task
 {
     public Guid Id { get; init; }
 
-    public IReadOnlyCollection<Solution> Solutions { get; init; } = null!;
+    public int SolutionCount { get; init; }
 
-    public IReadOnlyCollection<QuestionContent> QuestionContents { get; init; } = null!;
+    public int MaxSolutionCount { get; init; }
+
+    public decimal TaskSolvingPercent { get; init; }
+
+    public IReadOnlyCollection<Question> Questions { get; init; } = null!;
 }
 
-public record QuestionContent
+public record Question
 {
-    public Guid Id { get; init; }
+    public string QuestionWording { get; init; } = null!;
 
     public string Content { get; init; } = null!;
-}
 
-public record Solution
-{
-    public Guid Id { get; init; }
-
-    public string Username { get; init; } = null!;
+    public string? Image { get; init; }
 
     public IReadOnlyCollection<Answer> Answers { get; init; } = null!;
+
+    public IReadOnlyCollection<AnswerStatistic> AnswerStatistics { get; init; } = null!;
+
+    public AnswerStatistic? RelevantAnswerStatistic { get; init; } = null!;
 }
 
 public record Answer
 {
-    public Guid QuestionId { get; init; }
+    public string Username { get; init; } = null!;
 
     public string Content { get; init; } = null!;
+}
+
+public record AnswerStatistic
+{
+    public string Answer { get; init; } = null!;
+
+    public decimal Frequency { get; init; }
 }

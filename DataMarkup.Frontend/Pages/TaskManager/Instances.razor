@@ -1,10 +1,9 @@
-﻿@page "/TaskManager/instances/{IdString}/{Page:int}"
+﻿@page "/TaskManager/instances/{IdString}"
 @inherits Base
 @attribute [Authorize]
 
 @using DataMarkup.Entities.Views
 @using Task = System.Threading.Tasks.Task
-@using DataMarkup.Entities
 @using DataMarkup.Entities.Parameters.TaskManager
 @using DataMarkup.Frontend.Models
 
@@ -44,12 +43,11 @@
                             <h5 class="card-title fw-bold mb-2">@type.StaticContent</h5>
                             <label class="fw-bold">Question constraint:</label>
                             <p class="card-text">@type.DynamicContentConstraint</p>
-                            <InputTextArea @bind-Value="instance.Content" class="form-control mb-1" rows="3"
+                            <InputTextArea @bind-Value="instance.Content" class="form-control mb-2" rows="3"
                                            placeholder="Question content"/>
                             <ValidationMessage For="() => instance.Content"/>
-                            <InputTextArea @bind-Value="instance.ImageSource" class="form-control" rows="2"
-                                           placeholder="Image source or base64 content">
-                            </InputTextArea>
+                            
+                            <InputFile OnChange="@(async args => await UploadTaskImageFileAsync(args, instance))" />
                             <ValidationMessage For="() => instance.ImageSource"/>
                         </div>
                     </div>
@@ -64,7 +62,7 @@
         <div class="col-md-6 mb-1">
             
             <p class="fw-bold float-end">
-                @_fullySolvedTaskCount / @_totalTaskCount, @(_fullySolvedTaskCount / (decimal)(_totalTaskCount is 0 ? 1 : _totalTaskCount))%
+                @_fullySolvedTaskCount / @_totalTaskCount, @((_fullySolvedTaskCount / (decimal)(_totalTaskCount is 0 ? 1 : _totalTaskCount)) * 100)%
             </p>
             
             <div class="d-flex justify-content-center">
@@ -73,7 +71,7 @@
                         @foreach (var pageIndex in Enumerable.Range(1, _totalPageCount))
                         {
                             <li class="page-item @(pageIndex == Page ? "active" : string.Empty)">
-                                <a class="page-link" @onclick="() => ReloadWithPage(pageIndex)">
+                                <a class="page-link" @onclick="async () => await ReloadWithPageAsync(pageIndex)">
                                     @pageIndex
                                 </a>
                             </li>
@@ -86,65 +84,76 @@
             <ul class="list-group">
                 @foreach (var element in _currentTasks)
                 {
+                    var task = element.Task;
+                    
                     <li class="list-group-item mb-2">
                         <div class="btn btn-light float-start" @onclick="() => element.ChangeVisibility()">
-                            @element.Statistic.Id
+                            @task.Id
                         </div>
                         <div class="float-end">
-                            @(element.Statistic.Solutions.Count) / @(_taskType.SolutionsCount)
+                            @(task.SolutionCount) / @(_taskType.SolutionsCount)
                         </div>
                     </li>
 
                     if (element.IsVisible)
                     {
-                        @foreach (var (question, answersEnumerable) in element.Statistic.QuestionContents
-                            .GroupJoin(element.Statistic.Solutions
-                                .SelectMany(solution => solution.Answers
-                                    .Select(answer => (answer, solution.Username))),
-                                question => question.Id,
-                                answerItem => answerItem.answer.QuestionId,
-                                (question, answerItems) => (question, answerItems)))
+                        @foreach (var question in task.Questions)
                         {
-                            var answers = answersEnumerable.ToArray();
-
                             <div class="row mx-1 mb-2 border rounded">
-                                <div class="col-md-12 p-3">
+                                <div class="col-md-8 p-3">
+                                    <label class="fw-bold">Question wording:</label><br>
+                                    <p>@question.QuestionWording</p>
+                                    
                                     <label class="fw-bold">Content:</label><br>
                                     <p>@question.Content</p>
                                 </div>
+                                <div class="col-md-4 p-3">
+                                    @if (question.Image is null)
+                                    {
+                                        <h3 class="d-flex justify-content-center text-muted">
+                                            No visual data
+                                        </h3>
+                                    }
+                                    else
+                                    {
+                                        <img src="@question.Image" alt="Unable to show image" class="img-fluid">
+                                    }
+                                </div>
                                 <div class="col-md-6 p-3">
                                     <ul class="list-group">
-                                        <label class="fw-bold">Answers:</label><br>
-                                        @foreach (var answer in answers)
+                                        <label class="fw-bold">Answers:</label>
+                                        @foreach (var answer in question.Answers)
                                         {
                                             <li class="list-group-item">
-                                                <label class="fw-bold">User:</label><br>
-                                                <p>@answer.Username</p><br>
+                                                <label class="fw-bold">User:</label>
+                                                <p>@answer.Username</p>
 
-                                                <label class="fw-bold">Content:</label><br>
-                                                <p>@answer.answer.Content</p><br>
+                                                <label class="fw-bold">Content:</label>
+                                                <p>@answer.Content</p>
                                             </li>
                                         }
                                     </ul>
                                 </div>
                                 <div class="col-md-6 p-3">
                                     @{
-                                        var answersGroups = answers.Any() ?
-                                            answers
-                                                .GroupBy(answer => answer.answer.Content)
-                                                .OrderBy(group => group.Count())
-                                                .Select(group =>
-                                                    (Title: group.Key.CutIfMoreThan(15),
-                                                        Content: group.Key,
-                                                        Percent: group.Count() / (decimal)answers.Length))
-                                                .ToArray() :
-                                            new[] { (Title: "No aswers", Content: "-", Percent: 1M) };
-                                        var mostRelevantAnswer = answersGroups.First();
+                                        var emptyAnswerStatistic = new AnswerStatistic
+                                        {
+                                            Answer = "No aswers",
+                                            Frequency = 1M
+                                        };
+                                        
+                                        var answerStatistics = question.AnswerStatistics.Any() ?
+                                            question.AnswerStatistics :
+                                            new [] { emptyAnswerStatistic };
+
+                                        var mostRelevantAnswer = question.RelevantAnswerStatistic ??
+                                                                 emptyAnswerStatistic;
 
                                         var pieConfig = Extensions.GetPieConfig(
-                                            datasetValues: answersGroups.Select(group => group.Percent),
+                                            datasetValues: answerStatistics.Select(statistic => statistic.Frequency),
                                             title: "Answer statistic:",
-                                            labels: answersGroups.Select(group => group.Title),
+                                            labels: answerStatistics
+                                                .Select(statistic => statistic.Answer.CutIfMoreThan(15)),
                                             colors: Extensions.GetBluePieColors());
 
                                         <div class="mb-2">
@@ -152,7 +161,7 @@
                                         </div>
 
                                         <label class="fw-bold">Most relevant answer:</label><br>
-                                        <p>@mostRelevantAnswer.Content</p><br>
+                                        <p>@mostRelevantAnswer.Answer</p><br>
                                     }
 
                                 </div>
@@ -169,16 +178,15 @@
     [Parameter]
     public string? IdString { get; set; }
 
-    [Parameter]
-    public int Page { get; set; } = 1;
+    private int Page { get; set; } = 1;
     
     private Guid _id;
     private int _totalPageCount = 1;
-    private int _totalTaskCount = 0;
-    private int _fullySolvedTaskCount = 0;
-    private const int PageSize = 100;
+    private int _totalTaskCount;
+    private int _fullySolvedTaskCount;
+    private const int PageSize = 50;
 
-    private TaskType _taskType = new() { AccessType = AccessType.Free };
+    private TaskType _taskType = new();
     private IReadOnlyCollection<TaskElement> _currentTasks = Array.Empty<TaskElement>();
 
     private TaskInstancesParameters _taskInstancesParameters = new();
@@ -195,10 +203,9 @@
         _id = Guid.Parse(IdString!);
         var getTaskTypeResult = await ApiHttpClient.GetTaskTypeAsync(_id);
 
-        _taskType = getTaskTypeResult!.TaskType!;
-
         if (getTaskTypeResult?.Successful is true)
         {
+            _taskType = getTaskTypeResult.TaskType!;
             _questions = _taskType.QuestionTypes
                 .Select(questionType => (questionType, new QuestionInstanceParameters()))
                 .ToArray();
@@ -225,7 +232,7 @@
         if (addTaskInstancesResult?.Successful is true)
         {
             await ShowAlertAsync(AlertType.Success, "Task instance added successfully.");
-            NavigationManager.NavigateTo($"/TaskManager/instances/{IdString}&{Page}");
+            await LoadTasksAsync();
         }
         else
             await ShowAlertAsync(AlertType.Danger, addTaskInstancesResult?.Message ?? DefaultErrorMessage);
@@ -237,12 +244,8 @@
 
         if (getTaskInstancesResult?.Successful is true)
         {
-            _currentTasks = getTaskInstancesResult.TaskStatistics
-                .Select(statistic => new TaskElement
-                {
-                    Statistic = statistic,
-                    IsVisible = false
-                })
+            _currentTasks = getTaskInstancesResult.Tasks
+                .Select(task => new TaskElement { Task = task, IsVisible = false })
                 .ToArray();
             _totalPageCount = getTaskInstancesResult.TotalPageCount;
             _totalTaskCount = getTaskInstancesResult.TotalCount;
@@ -253,15 +256,49 @@
 
         StateHasChanged();
     }
-
-    private void ReloadWithPage(int page)
+    
+    private async Task UploadTaskImageFileAsync(InputFileChangeEventArgs fileChangeEventArgs,
+        QuestionInstanceParameters questionInstanceParameters)
     {
-        NavigationManager.NavigateTo($"/TaskManager/instances/{IdString}/{page}", forceLoad: true);
+        var extension = Path.GetExtension(fileChangeEventArgs.File.Name);
+
+        if (extension is not (".jpg" or ".jpeg" or ".jpe" or ".jif" or ".jfif" or ".png"))
+        {
+            await ShowAlertAsync(AlertType.Danger, "Sorry, only jpeg and png file format supports.");
+
+            return;
+        }
+        
+        await using var fileStream = fileChangeEventArgs.File.OpenReadStream();
+        await using var memoryStream = new MemoryStream();
+
+        await fileStream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        var fileBytes = memoryStream.ToArray();
+        var base64StringFile = Convert.ToBase64String(fileBytes);
+
+        var typePart = extension switch
+        {
+            ".jpg" or ".jpeg" or ".jpe" or ".jif" or ".jfif" => "jpeg",
+            ".png" => ".png",
+            _ => throw new NotImplementedException()
+        };
+
+        var outputString = $"data:image/{typePart};charset=utf-8;base64,{base64StringFile}";
+        
+        questionInstanceParameters.ImageSource = outputString;
+    }
+
+    private async Task ReloadWithPageAsync(int page)
+    {
+        Page = page;
+        await LoadTasksAsync();
     }
 
     private record TaskElement
     {
-        public TaskStatistic Statistic { get; init; } = null!;
+        public Entities.Views.Task Task { get; set; } = null!;
         
         public bool IsVisible { get; set; }
         

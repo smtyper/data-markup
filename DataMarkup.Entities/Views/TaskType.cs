@@ -18,7 +18,7 @@ public record TaskType
 
     public IReadOnlyCollection<Permission> Permissions { get; init; } = null!;
 
-    public IReadOnlyCollection<Task> TaskInstances { get; init; } = null!;
+    public IReadOnlyCollection<SolverTask> TaskInstances { get; init; } = null!;
 }
 
 public record QuestionType

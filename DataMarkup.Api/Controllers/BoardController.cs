@@ -34,14 +34,18 @@ public class BoardController : ControllerBase
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
 
-        var availableTaskTypes = await _applicationDbContext.TaskTypes
-            .Include(type => type.Permissions)
-            .Include(type => type.QuestionTypes)
-            .Where(type => type.AccessType == AccessType.Free ||
-                           type.Permissions!.Any(permission => permission.UserId == Guid.Parse(currentUser.Id)) ||
-                           type.UserId == currentUser.Id)
+        var availableTaskTypes = (await _applicationDbContext.TaskTypes
+                .Include(type => type.Permissions)
+                .Include(type => type.QuestionTypes)
+                .Include(type => type.TaskInstances)!
+                .ThenInclude(instance => instance.Solutions)
+                .Where(type => type.AccessType == AccessType.Free ||
+                               type.Permissions!.Any(permission => permission.UserId == currentUser.Id) ||
+                               type.UserId == currentUser.Id)
+                .ToArrayAsync())
+            .Where(type => type.TaskInstances!.Any(instance => instance.Solutions!.Count < type.SolutionsCount))
             .Select(type => type.Adapt<Entities.Views.TaskType>())
-            .ToArrayAsync();
+            .ToArray();
 
         return Ok(new GetAvailableTaskTypesResult
         {
@@ -56,7 +60,6 @@ public class BoardController : ControllerBase
     public async Task<IActionResult> GetTask([FromQuery]Guid taskTypeId)
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
-        var currentUserId = Guid.Parse(currentUser.Id);
         var taskType = await _applicationDbContext.TaskTypes
             .Include(type => type.Permissions)
             .SingleOrDefaultAsync(type => type.Id == taskTypeId);
@@ -69,7 +72,7 @@ public class BoardController : ControllerBase
             });
 
         if (taskType.AccessType is AccessType.WhiteList &&
-            taskType.Permissions!.All(persmission => persmission.UserId == currentUserId))
+            taskType.Permissions!.All(persmission => persmission.UserId == currentUser.Id))
             return BadRequest(new GetTaskResult
             {
                 Successful = false,
@@ -83,28 +86,29 @@ public class BoardController : ControllerBase
             .ThenInclude(questionInstance => questionInstance.QuestionType)
             .AsEnumerable()
             .Where(instance => instance.Solutions!.Count < taskType.SolutionsCount &&
-                               instance.Solutions!.All(solution => solution.UserId != currentUserId))
+                               instance.Solutions!.All(solution => solution.UserId != currentUser.Id))
             .ToArray();
 
         if (!taskInstances.Any())
-            return Ok(new GetTaskResult
+            return StatusCode(410, new GetTaskResult
             {
-                Successful = true,
+                Successful = false,
                 Message = "There are no more tasks of this type for you."
             });
 
         var taskInstance = taskInstances.First();
 
-        var resultTask = new Entities.Views.Task
+        var resultTask = new Entities.Views.SolverTask
         {
             InstanceId = taskInstance.Id,
             Instruction = taskType.Instruction,
             Questions = taskInstance.QuestionInstances!
-                .Select(questionInstance => new Entities.Views.Question
+                .Select(questionInstance => new Entities.Views.SolverQuestion
                 {
                     InstanceId = questionInstance.Id,
                     Description = questionInstance.QuestionType!.StaticContent,
                     Content = questionInstance.Content,
+                    ImageContent = questionInstance.ImageSource,
                     AnswerDescription = questionInstance.QuestionType!.AnswerDescription,
                     AnswerPattern = questionInstance.QuestionType!.AnswerConstraint
                 })
@@ -125,7 +129,6 @@ public class BoardController : ControllerBase
         var taskInstanceId = solutionParameters.TaskInstanceId!.Value;
 
         var currentUser = await _userManager.GetUserAsync(HttpContext);
-        var currentUserId = Guid.Parse(currentUser.Id);
 
         var taskInstance = await _applicationDbContext.TaskInstances
             .Include(instance => instance.Solutions)
@@ -154,15 +157,15 @@ public class BoardController : ControllerBase
             });
 
         if (taskType.AccessType is AccessType.WhiteList &&
-            taskType.Permissions!.All(persmission => persmission.UserId != currentUserId) &&
-            taskType.UserId != currentUserId.ToString())
+            taskType.Permissions!.All(persmission => persmission.UserId != currentUser.Id) &&
+            taskType.UserId != currentUser.Id)
             return BadRequest(new AddSolutionResult
             {
                 Successful = false,
                 Message = "You have no permission to solve this task."
             });
 
-        if (taskInstance.Solutions!.Any(solution => solution.UserId == currentUserId))
+        if (taskInstance.Solutions!.Any(solution => solution.UserId == currentUser.Id))
             return Conflict(new AddSolutionResult
             {
                 Successful = false,
@@ -213,7 +216,7 @@ public class BoardController : ControllerBase
         {
             Id = solutionId,
             TaskInstanceId = taskInstanceId,
-            UserId = currentUserId,
+            UserId = currentUser.Id,
             Answers = questionsMap
                 .Select(map => new Answer
                 {

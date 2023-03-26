@@ -11,7 +11,7 @@ public record Permission
 
     public TaskType? TaskType { get; init; }
 
-    public Guid UserId { get; init; }
+    public string UserId { get; init; } = null!;
 
     public string Username { get; init; } = null!;
 

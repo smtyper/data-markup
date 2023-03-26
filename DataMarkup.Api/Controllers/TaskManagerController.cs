@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using DataMarkup.Api.DbContexts;
-using DataMarkup.Api.Models.Database.Access;
 using DataMarkup.Api.Models.Database.Account;
 using DataMarkup.Api.Models.Database.Markup;
 using DataMarkup.Entities.Parameters.TaskManager;
@@ -11,6 +10,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Permission = DataMarkup.Api.Models.Database.Access.Permission;
+using QuestionType = DataMarkup.Api.Models.Database.Markup.QuestionType;
+using TaskType = DataMarkup.Api.Models.Database.Markup.TaskType;
 
 namespace DataMarkup.Api.Controllers;
 
@@ -55,7 +57,7 @@ public class TaskManagerController : ControllerBase
             });
 
         var permissionToRemove = await _applicationDbContext.Permissions
-            .SingleOrDefaultAsync(permission => permission.UserId == Guid.Parse(user.Id) &&
+            .SingleOrDefaultAsync(permission => permission.UserId == user.Id &&
                                        permission.TaskTypeId == removePermissionParameters.TaskTypeId);
 
         if (permissionToRemove is null)
@@ -97,16 +99,14 @@ public class TaskManagerController : ControllerBase
                 Message = $"Unable to find user by name '{addPermissionParameters.Username}'."
             });
 
-        var userId = Guid.Parse(user.Id);
-
-        if (taskType.Permissions!.Any(permission => permission.UserId == userId))
+        if (taskType.Permissions!.Any(permission => permission.UserId == user.Id))
             return BadRequest(new AddPermissionResult
             {
                 Successful = false,
                 Message = "User already has permission."
             });
 
-        var persmission = new Permission { TaskTypeId = taskType.Id, UserId = userId, Username = user.UserName };
+        var persmission = new Permission { TaskTypeId = taskType.Id, UserId = user.Id, Username = user.UserName };
 
         await _applicationDbContext.Permissions.AddAsync(persmission);
         await _applicationDbContext.SaveChangesAsync();
@@ -157,18 +157,10 @@ public class TaskManagerController : ControllerBase
 
     [HttpGet("instances/{typeId:guid}&{page:int}&{pageSize:int}")]
     public async Task<IActionResult> GetTaskInstances(Guid typeId,
-        [Range(1, int.MaxValue)] int page = 1, [Range(1, 1000)] int pageSize = 100)
+        [Range(1, int.MaxValue)] int page = 1, [Range(1, int.MaxValue)] int pageSize = 100)
     {
         var currentUser = await _userManager.GetUserAsync(HttpContext);
-
-        var taskType = await _applicationDbContext.TaskTypes
-            .SingleOrDefaultAsync(type => type.UserId == currentUser.Id && type.Id == typeId);
-        var rawInstancesQuery = _applicationDbContext.TaskTypes
-            .Include(type => type.TaskInstances)!
-            .ThenInclude(instance => instance.Solutions)!
-            .ThenInclude(solution => solution.Answers)
-            .Where(type => type.UserId == currentUser.Id && type.Id == typeId)
-            .SelectMany(type => type.TaskInstances!);
+        var taskType = await _applicationDbContext.TaskTypes.SingleOrDefaultAsync(type => type.Id == typeId);
 
         if (taskType is null)
             return BadRequest(new GetTaskInstancesResult
@@ -177,7 +169,84 @@ public class TaskManagerController : ControllerBase
                 Message = "Unable to find task type by id."
             });
 
-        var totalCount = await rawInstancesQuery.CountAsync();
+        var taskInstancesQuery = _applicationDbContext.TaskInstances
+            .Include(instance => instance.QuestionInstances)
+            .Include(instance => instance.Solutions)!
+                .ThenInclude(solution => solution.User)
+            .Include(instance => instance.Solutions)!
+                .ThenInclude(solution => solution.Answers)
+            .Include(instance => instance.TaskType)
+                .ThenInclude(type => type!.QuestionTypes)
+            .Where(instance => instance.TaskType!.UserId == currentUser.Id && instance.TaskTypeId == typeId);
+        var taskInstances = await taskInstancesQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync();
+
+        var outputTasks = taskInstances
+            .Select(instance =>
+            {
+                var questions = instance.TaskType!.QuestionTypes!
+                    .Join(instance.QuestionInstances!,
+                        questionType => questionType.Id,
+                        questionInstance => questionInstance.QuestionTypeId,
+                        (questionType, questionInstance) => (questionType, questionInstance))
+                    .GroupJoin(instance.Solutions!
+                            .SelectMany(solution => solution.Answers!
+                                .Select(answer => (solution.User!.UserName, answer))),
+                        questionItem => questionItem.questionInstance.Id,
+                        answerItem => answerItem.answer.QuestionInstanceId,
+                        (item, answers) => (item.questionType, item.questionInstance, answers))
+                    .Select(item =>
+                    {
+                        var answers = item.answers
+                            .Select(answer => new Entities.Views.Answer
+                            {
+                                Username = answer.UserName,
+                                Content = answer.answer.Content
+                            })
+                            .ToArray();
+                        var answerStatistics = answers
+                            .GroupBy(answer => answer.Content)
+                            .Select(group => new Entities.Views.AnswerStatistic
+                            {
+                                Answer = group.Key,
+                                Frequency = group.Count() / (decimal)answers.Length
+                            })
+                            .OrderByDescending(statistic => statistic.Frequency)
+                            .ToArray();
+                        var relevantAnswerStatistic = answerStatistics.FirstOrDefault();
+
+                        var questionInfo = new Entities.Views.Question
+                        {
+                            QuestionWording = item.questionType.StaticContent,
+                            Content = item.questionInstance.Content,
+                            Image = item.questionInstance.ImageSource,
+                            Answers = answers,
+                            AnswerStatistics = answerStatistics,
+                            RelevantAnswerStatistic = relevantAnswerStatistic
+                        };
+
+                        return questionInfo;
+                    })
+                    .ToArray();
+
+                var taskInfo = new Entities.Views.Task
+                {
+                    Id = instance.Id,
+                    SolutionCount = instance.Solutions!.Count,
+                    MaxSolutionCount = instance.TaskType!.SolutionsCount,
+                    TaskSolvingPercent = instance.TaskType.SolutionsCount is 0 ?
+                        0 :
+                        instance.Solutions.Count / (decimal)instance.TaskType.SolutionsCount,
+                    Questions = questions
+                };
+
+                return taskInfo;
+            })
+            .ToArray();
+
+        var totalCount = await taskInstancesQuery.CountAsync();
         var fullySolvedTasksCont = await _applicationDbContext.TaskInstances
             .Join(_applicationDbContext.Solutions,
                 instance => instance.Id,
@@ -186,49 +255,7 @@ public class TaskManagerController : ControllerBase
             .Where(item => item.instance.TaskTypeId == typeId)
             .GroupBy(item => item.instance.Id)
             .CountAsync(group => group.Count() == taskType.SolutionsCount);
-
-        var rawInstances = await rawInstancesQuery
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToArrayAsync();
         var totalPageCount = (totalCount / pageSize) + (totalCount % pageSize is 0 ? 0 : 1);
-
-        foreach (var taskInstance in rawInstances)
-            taskInstance.QuestionInstances = await _applicationDbContext.QuestionInstances
-                .Where(question => question.TaskInstanceId == taskInstance.Id)
-                .ToArrayAsync();
-
-        foreach (var solution in rawInstances.SelectMany(instance => instance.Solutions!))
-            solution.User = await _applicationDbContext.Users
-                .SingleAsync(user => user.Id == solution.UserId.ToString());
-
-        var taskStatistics = rawInstances
-            .Select(instance => new Entities.Views.TaskStatistic
-            {
-                Id = instance.Id,
-                Solutions = instance.Solutions!
-                    .Select(solution => new Entities.Views.Solution
-                    {
-                        Id = solution.Id,
-                        Username = solution.User!.UserName,
-                        Answers = solution.Answers!
-                            .Select(answer => new Entities.Views.Answer
-                            {
-                                QuestionId = answer.QuestionInstanceId,
-                                Content = answer.Content
-                            })
-                            .ToArray()
-                    })
-                    .ToArray(),
-                QuestionContents = instance.QuestionInstances!
-                    .Select(question => new Entities.Views.QuestionContent
-                    {
-                        Id = question.Id,
-                        Content = question.Content
-                    })
-                    .ToArray()
-            })
-            .ToArray();
 
         return Ok(new GetTaskInstancesResult
         {
@@ -237,7 +264,8 @@ public class TaskManagerController : ControllerBase
             TotalCount = totalCount,
             TotalPageCount = totalPageCount,
             FullySolvedTasksCont = fullySolvedTasksCont,
-            Successful = true, TaskStatistics = taskStatistics
+            Successful = true,
+            Tasks = outputTasks
         });
     }
 
@@ -364,7 +392,7 @@ public class TaskManagerController : ControllerBase
 
         var maxQuestionInstancesCount = taskInstancesParameters.QuestionDictionary.Values
             .Max(instanceDtos => instanceDtos.Count);
-        var taskTypes = Enumerable
+        var taskInstances = Enumerable
             .Range(0, maxQuestionInstancesCount)
             .Select(index =>
             {
@@ -386,9 +414,45 @@ public class TaskManagerController : ControllerBase
             })
             .ToArray();
 
-        await _applicationDbContext.TaskInstances.AddRangeAsync(taskTypes);
+        await _applicationDbContext.TaskInstances.AddRangeAsync(taskInstances);
         await _applicationDbContext.SaveChangesAsync();
 
         return Ok(new AddTaskInstancesResult { Successful = true });
+    }
+
+    [HttpDelete]
+    [Route("remove-task-instances")]
+    public async Task<IActionResult> RemoveTaskInstance(Guid instanceId)
+    {
+        var currentUser = await _userManager.GetUserAsync(HttpContext);
+
+        var instance = await _applicationDbContext.TaskInstances
+            .Include(instance => instance.TaskType)
+            .Include(instance => instance.QuestionInstances)
+            .Include(instance => instance.Solutions)!
+            .ThenInclude(solution => solution.Answers)
+            .Where(instance => instance.TaskType!.UserId == currentUser.Id &&
+                               instance.Id == instanceId)
+            .SingleOrDefaultAsync();
+
+        if (instance is null)
+            return BadRequest(new RemoveTaskInstanceResult
+            {
+                Successful = false,
+                Message = "Unable to find your task instance by id."
+            });
+
+        var answers = instance.Solutions!.SelectMany(solution => solution.Answers!).ToArray();
+
+        if (answers.Any())
+            _applicationDbContext.Answers.RemoveRange(answers);
+
+        _applicationDbContext.Solutions.RemoveRange(instance.Solutions!);
+        _applicationDbContext.QuestionInstances.RemoveRange(instance.QuestionInstances!);
+        _applicationDbContext.Answers.RemoveRange(answers);
+
+        await _applicationDbContext.SaveChangesAsync();
+
+        return Ok(new RemoveTaskInstanceResult { Successful = true });
     }
 }

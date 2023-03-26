@@ -6,7 +6,7 @@ public record RefreshToken
 
     public string Token { get; init; } = null!;
 
-    public Guid UserId { get; init; }
+    public string UserId { get; init; } = null!;
 
     public User User { get; init; } = null!;
 

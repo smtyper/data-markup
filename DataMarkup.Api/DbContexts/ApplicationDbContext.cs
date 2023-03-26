@@ -22,6 +22,8 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
     public DbSet<Solution> Solutions { get; init; } = null!;
 
+    public DbSet<Answer> Answers { get; init; } = null!;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
@@ -30,9 +32,9 @@ public class ApplicationDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<RefreshToken>()
-            .HasOne(token => token.User)
-            .WithOne(user => user.RefreshToken)
+        builder.Entity<User>()
+            .HasOne(user => user.RefreshToken)
+            .WithOne(token => token.User)
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<TaskType>()
@@ -71,7 +73,9 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
         builder.Entity<Solution>()
             .HasOne(solution => solution.User)
-            .WithMany(user => user.Solutions);
+            .WithMany(user => user.Solutions)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.Entity<Solution>()
             .HasMany(solution => solution.Answers)
             .WithOne(answer => answer.Solution)

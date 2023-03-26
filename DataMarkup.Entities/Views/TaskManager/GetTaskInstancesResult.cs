@@ -12,5 +12,5 @@ public record GetTaskInstancesResult : RequestResult
 
     public int FullySolvedTasksCont { get; init; }
 
-    public IReadOnlyCollection<TaskStatistic> TaskStatistics { get; init; } = null!;
+    public IReadOnlyCollection<Task> Tasks { get; init; } = null!;
 }

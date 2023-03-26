@@ -11,12 +11,12 @@
     <main>
         <div class="top-row px-4">
             <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-            <a href="/Account/Register">Register</a>
             <AuthorizeView>
                 <Authorized>
                     <a @onclick="Logout" href="javascript:void(0)">Logout</a>
                 </Authorized>
                 <NotAuthorized>
+                    <a href="/Account/Register">Register</a>
                     <a href="/Account/Login">Login</a>
                 </NotAuthorized>
             </AuthorizeView>

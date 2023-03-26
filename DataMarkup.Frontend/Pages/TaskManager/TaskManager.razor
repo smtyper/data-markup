@@ -67,9 +67,10 @@
     {
         var taskTypesResult = await ApiHttpClient.GetTaskTypesAsync();
 
-        _taskTypes = taskTypesResult!.Successful ?
-            taskTypesResult.TaskTypes :
-            Array.Empty<TaskType>();
+        if (taskTypesResult?.Successful is true)
+            _taskTypes = taskTypesResult.TaskTypes;
+        else
+            await ShowAlertAsync(AlertType.Danger, taskTypesResult?.Message ?? DefaultErrorMessage);
 
         await base.OnInitializedAsync();
     }
