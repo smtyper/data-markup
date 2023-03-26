@@ -91,13 +91,13 @@
                             @task.Id
                         </div>
                         <div class="float-end">
-                            <div>
+                            <p>
                                 @(task.SolutionCount) / @(_taskType.SolutionsCount)
-                            </div>
-                            <button class="btn default"
-                                    @onclick="async () => await RemoveTaskInstanceAsync(element.Task.Id)">
-                                🗙
-                            </button>
+                                <button class="btn default"
+                                        @onclick="async () => await RemoveTaskInstanceAsync(element.Task.Id)">
+                                    🗙
+                                </button>
+                            </p>
                         </div>
                     </li>
 
